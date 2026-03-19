@@ -5,15 +5,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../../src/stores/useAuthStore';
 import { useResumeStore } from '../../src/stores/useResumeStore';
+import { TEMPLATES } from '../../src/data/templates';
 
 export default function Dashboard() {
   const { user, logout } = useAuthStore();
   const { resumes, createNewResume, deleteResume, duplicateResume } = useResumeStore();
   const router = useRouter();
   const [showDeleteModal, setShowDeleteModal] = useState(null);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
-  const handleCreateResume = () => {
-    const resume = createNewResume('atlanic-blue');
+  const handleCreateResume = (templateId = 'atlanic-blue') => {
+    setShowTemplateModal(false);
+    const resume = createNewResume(templateId);
     router.push(`/editor/${resume.id}`);
   };
 
@@ -70,7 +73,7 @@ export default function Dashboard() {
             <p className="text-slate-600 mt-1">Manage and create your professional resumes</p>
           </div>
           <button
-            onClick={handleCreateResume}
+            onClick={() => setShowTemplateModal(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg shadow-blue-500/25"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,7 +93,7 @@ export default function Dashboard() {
             <h2 className="text-xl font-semibold text-slate-800 mb-2">No resumes yet</h2>
             <p className="text-slate-500 mb-6">Create your first resume to get started</p>
             <button
-              onClick={handleCreateResume}
+              onClick={() => setShowTemplateModal(true)}
               className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -173,6 +176,58 @@ export default function Dashboard() {
               >
                 Delete
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTemplateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-slate-800">Choose a Template</h3>
+              <button
+                onClick={() => setShowTemplateModal(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {TEMPLATES.map((template) => (
+                <button
+                  key={template.id}
+                  onClick={() => handleCreateResume(template.id)}
+                  className="p-4 rounded-xl border-2 border-slate-200 hover:border-blue-500 transition-all text-left group"
+                >
+                  <div
+                    className="h-32 rounded-lg mb-3 relative overflow-hidden"
+                    style={{
+                      background: `linear-gradient(135deg, ${template.styles.primaryColor}15, ${template.styles.accentColor}15)`
+                    }}
+                  >
+                    <div className="absolute inset-0 p-2">
+                      <div className="bg-white rounded shadow-sm h-full p-2">
+                        <div className="h-3 w-1/2 rounded mb-1" style={{ backgroundColor: template.styles.primaryColor }}></div>
+                        <div className="h-2 w-3/4 rounded mb-2" style={{ backgroundColor: template.styles.accentColor, opacity: 0.5 }}></div>
+                        <div className="space-y-1">
+                          <div className="h-1.5 w-full rounded bg-slate-100"></div>
+                          <div className="h-1.5 w-5/6 rounded bg-slate-100"></div>
+                          <div className="h-1.5 w-4/6 rounded bg-slate-100"></div>
+                        </div>
+                        <div className="mt-2 border-t border-slate-100 pt-2">
+                          <div className="h-1.5 w-full rounded bg-slate-100"></div>
+                          <div className="h-1.5 w-3/4 rounded bg-slate-100 mt-1"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="font-medium text-slate-800 group-hover:text-blue-600 transition-colors">{template.name}</p>
+                  <p className="text-xs text-slate-500 capitalize">{template.category}</p>
+                </button>
+              ))}
             </div>
           </div>
         </div>

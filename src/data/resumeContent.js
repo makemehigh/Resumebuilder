@@ -21,7 +21,7 @@ export const createEmptyResume = (templateId = 'atlanic-blue') => ({
   })),
 });
 
-const getEmptySectionContent = (type) => {
+export const getEmptySectionContent = (type) => {
   switch (type) {
     case SECTION_TYPES.PROFILE:
       return { text: '' };
@@ -57,12 +57,20 @@ const getEmptySectionContent = (type) => {
       };
     case SECTION_TYPES.SKILLS:
       return {
+        items: [],
         categories: [
           { id: 'cat-1', name: 'Technical', skills: [] },
           { id: 'cat-2', name: 'Tools', skills: [] },
           { id: 'cat-3', name: 'Languages', skills: [] },
         ],
         displayStyle: 'grid',
+      };
+    case SECTION_TYPES.LANGUAGES:
+      return {
+        items: [
+          { id: 'lang-1', name: '', level: 3 },
+        ],
+        displayStyle: 'list',
       };
     case SECTION_TYPES.STRENGTHS:
       return {

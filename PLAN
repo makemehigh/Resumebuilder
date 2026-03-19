@@ -1,0 +1,524 @@
+Create a Resume Builder web application similar to FlowCV using React (Next.js) and Firebase.
+
+CORE FEATURES:
+1. Landing page with hero section, features, templates preview, testimonials, FAQ
+2. Firebase Authentication (Google + Email/Password)
+3. Dashboard showing user's resumes with "Create New" option
+4. Template selection page with 6+ professional templates
+5. Resume editor with:
+   - Content management (Personal info, Education, Experience, Skills, Projects)
+   - Drag-and-drop section reordering
+   - Real-time preview
+   - Customization panel (colors, fonts, layout, spacing)
+6. PDF export functionality
+7. Auto-save to Firestore
+
+TECH STACK:
+- Next.js 14 (App Router)
+- React 18
+- Firebase (Auth, Firestore, Storage)
+- Tailwind CSS
+- Zustand (state management)
+- Framer Motion (animations)
+- html2canvas + jsPDF (PDF generation)
+- react-beautiful-dnd (drag and drop)
+
+DATABASE SCHEMA:
+- users: { uid, email, displayName, photoURL, createdAt }
+- resumes: { id, userId, name, templateId, content, customization, lastEdited }
+
+IMPLEMENTATION PRIORITIES:
+1. Setup Firebase project and authentication
+2. Create landing page with auth modal
+3. Build dashboard with resume list
+4. Implement template system (start with 2-3 templates)
+5. Create editor with split-screen layout
+6. Add customization panel
+7. Implement PDF export
+8. Add auto-save functionality
+
+Make it responsive, performant, and deployable on Vercel with minimal backend maintenance.
+
+
+// firebase.js
+import { initializeApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
+
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+};
+
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
+export const googleProvider = new GoogleAuthProvider();
+
+📄 PDF GENERATION
+JavaScript
+Copy
+// utils/pdfGenerator.js
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+
+export const generatePDF = async (elementId, filename = 'resume.pdf') => {
+  const element = document.getElementById(elementId);
+  const canvas = await html2canvas(element, {
+    scale: 2, // High resolution
+    useCORS: true,
+    logging: false
+  });
+  
+  const imgData = canvas.toDataURL('image/png');
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+  
+  pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+  pdf.save(filename);
+};
+🔒 SECURITY & PRIVACY
+JavaScript
+Copy
+// Firestore Security Rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can only access their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /resumes/{resumeId} {
+      allow read, write: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+    }
+  }
+}
+🚀 DEPLOYMENT STEPS
+Vercel (Frontend)
+bash
+Copy
+npm i -g vercel
+vercel --prod
+Firebase (Backend)
+Create project at console.firebase.google.com
+Enable Authentication (Google + Email)
+Create Firestore database (start in test mode, then secure)
+Enable Storage for images
+Environment Variables
+env
+Copy
+NEXT_PUBLIC_FIREBASE_API_KEY=xxx
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=xxx
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=xxx
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=xxx
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=xxx
+NEXT_PUBLIC_FIREBASE_APP_ID=xxx
+⚡ PERFORMANCE OPTIMIZATIONS
+Lazy load templates (dynamic imports)
+Debounced auto-save (500ms delay)
+Optimistic UI updates
+Image compression before upload (browser-image-compression)
+Virtual scrolling for long resume lists
+Service Worker for offline support (PWA)
+
+
+sCREEN 1 
+COMPONENTS:
+├── Navbar (Logo, Resume Templates, Pricing, About, Login, Start Now)
+├── Hero Section
+│   ├── Headline: "Build a job-winning resume for free"
+│   ├── Subtext: "Your first resume is 100% free forever. Unlimited downloads. No hidden fees."
+│   ├── CTA Button: "Get started - it's free ✨"
+│   └── Hero Image: Resume preview with floating elements
+├── Social Proof
+│   ├── User avatars (circular stack)
+│   └── "Trusted by X million users"
+├── Features Grid (3 columns)
+│   ├── 1st resume, free forever (gift icon)
+│   ├── Privacy & GDPR compliant (shield icon)
+│   └── Professional Templates (document icon)
+├── Templates Preview Section
+│   └── Horizontal scroll of template thumbnails
+├── Testimonials Section
+├── FAQ Accordion
+└── Footer (Product links, Company links, Social icons)
+
+FUNCTIONALITY:
+- Click "Start now" → Opens Auth Modal
+- Click "Login" → Opens Auth Modal
+- Smooth scroll animations
+- Mobile responsive hamburger menu
+
+aUTH MODEL 
+AUTH OPTIONS:
+├── Google Sign-In (OAuth 2.0)
+├── Email/Password
+│   ├── Login Form (Email, Password, Forgot Password)
+│   └── Signup Form (Email, Password, Confirm Password)
+└── Anonymous/Guest Mode (optional - save to localStorage)
+
+FIREBASE SETUP:
+- Project: Create Firebase project
+- Auth: Enable Google Provider + Email/Password
+- Firestore: Users collection (uid, email, displayName, photoURL, createdAt)
+- Security Rules: User can only read/write their own data
+
+dAHOBARD mY RESUMES
+LAYOUT:
+├── Sidebar (Left)
+│   ├── Logo
+│   ├── Navigation
+│   │   ├── Resume (active)
+│   │   ├── Cover Letter
+│   │   ├── Job Tracker
+│   │   ├── More (dropdown)
+│   │   ├── Plans & Pricing
+│   │   ├── Student Benefits
+│   │   └── My Account
+│   └── User Profile (bottom)
+│
+└── Main Content (Right)
+    ├── Header
+    │   ├── "My Resumes" title
+    │   ├── Subtitle: "Your first resume is free forever..."
+    │   └── "Upgrade your plan" link
+    │
+    └── Resume Grid
+        ├── "New resume" Card (dashed border, plus icon)
+        │   └── OnClick → Navigate to Template Selection
+        │
+        └── Existing Resume Cards (if any)
+            ├── Thumbnail preview
+            ├── Resume name
+            ├── Last edited time
+            ├── Page size (A4/Letter)
+            └── 3-dot menu (Rename, Duplicate, Delete, Download)
+
+DATA MODEL:
+{
+  resumes: [
+    {
+      id: "auto-generated",
+      userId: "firebase-uid",
+      name: "Resume 1",
+      templateId: "template-uuid",
+      lastEdited: timestamp,
+      pageSize: "A4", // or "Letter"
+      content: { /* resume data object */ },
+      customization: { /* colors, fonts, layout settings */ }
+    }
+  ]
+}
+
+SCREEN 3: Template Selection
+
+
+HEADER:
+├── Title: "Start building your resume"
+├── Subtitle: "Choose a design you like. You can customize or switch it later."
+├── Filter Tabs: All Templates | Simple | Modern | Creative
+└── "Import existing resume" button (top right)
+
+TEMPLATE GRID:
+├── 3-column responsive grid
+├── Each template card:
+│   ├── Large preview image
+│   ├── Template name (e.g., "Atlantic Blue", "Classic", "Corporate")
+│   └── OnHover: "Use this template" button
+│
+└── Click → Create new resume with selected template → Navigate to Editor
+
+IMPORT FEATURE:
+├── Upload PDF/DOCX → Parse text (use pdf-parse, mammoth)
+├── Upload Image (PNG/JPG) → OCR (use Tesseract.js)
+└── Paste text manually → Auto-parse sections
+
+
+SCREEN 4: Resume Editor (Content Tab)
+
+
+LAYOUT: Split Screen
+├── Left Panel: Form Editor (40% width)
+│   ├── Top Tabs: Overview | Content | Customize | AI Tools
+│   ├── Section: Personal Details
+│   │   ├── Full Name
+│   │   ├── Job Title
+│   │   ├── Email, Phone, Location
+│   │   ├── Photo upload (circular crop)
+│   │   └── Social links (LinkedIn, GitHub, Portfolio)
+│   │
+│   ├── Collapsible Sections (Accordion):
+│   │   ├── Education (multiple entries)
+│   │   ├── Skills (categorized)
+│   │   ├── Strengths
+│   │   ├── Professional Summary
+│   │   ├── Experience (multiple entries with rich text)
+│   │   └── Projects
+│   │
+│   └── "Add Section" button (custom sections)
+│
+└── Right Panel: Live Preview (60% width)
+    ├── Toolbar: Resume selector dropdown, Download PDF, More options
+    ├── A4/Letter size preview
+    ├── Real-time updates (debounced 300ms)
+    └── Zoom controls (fit, 100%, 125%)
+
+SECTION DATA MODEL:
+{
+  personalDetails: {
+    fullName: "",
+    jobTitle: "",
+    email: "",
+    phone: "",
+    location: "",
+    photo: "",
+    socials: [{ platform: "", url: "" }]
+  },
+  sections: [
+    {
+      id: "unique-id",
+      type: "education|experience|skills|projects|custom",
+      title: "Section Display Name",
+      order: 1,
+      isVisible: true,
+      content: {} // varies by type
+    }
+  ]
+}
+
+SCREEN 5: Customize Tab (Design Studio)
+LAYOUT: Split Screen (Left: Customization Panel | Right: Live Preview)
+
+LEFT PANEL - CUSTOMIZATION OPTIONS:
+
+┌─────────────────────────────────────┐
+│  🔝 TOP BAR                         │
+│  Overview | Content | Customize | AI Tools  │
+│  [Resume 1 ▼] [Download] [⋮]      │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  🌍 LANGUAGE & REGION               │
+├─────────────────────────────────────┤
+│  Language: [English (UK) ▼]         │
+│  Date Format: [DD/MM/YYYY ▼]        │
+│  Page Format: [A4 ▼]                │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  🎨 APPLY A DESIGN TEMPLATE         │
+├─────────────────────────────────────┤
+│  [Template Thumbnails - Horizontal] │
+│  [Browse Templates] button          │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  📐 LAYOUT                          │
+├─────────────────────────────────────┤
+│  Columns: [Single] [Two] [Three]   │
+│  Header Position: [Left] [Top] [Right]│
+│  Column Width: [Slider Left/Right]  │
+│                                     │
+│  Change Section Layout:             │
+│  ┌─────────┬─────────┐             │
+│  │Education│Prof. Sum│             │
+│  │  [↑↓]   │  [↑↓]   │             │
+│  ├─────────┼─────────┤             │
+│  │ Skills  │Strengths│             │
+│  │  [↑↓]   │  [↑↓]   │             │
+│  ├─────────┼─────────┤             │
+│  │Experience        │             │
+│  │  [↑↓]   │Project  │             │
+│  │         │  [↑↓]   │             │
+│  └─────────┴─────────┘             │
+│  [+ Add Section] [Page break]       │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  📏 SPACING                         │
+├─────────────────────────────────────┤
+│  Page Margin: [Slider]              │
+│  Line Height: [Slider]              │
+│  Section Spacing: [Slider]          │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  🌈 COLORS                          │
+├─────────────────────────────────────┤
+│  Color Palette: [5-6 Preset Circles]│
+│  Custom: [Color Picker]             │
+│                                     │
+│  Apply accent color to:             │
+│  ☑ Name    ☐ Dates/Bars/Bullets    │
+│  ☑ Job title                        │
+│  ☑ Headings ☐ Entry subtitle       │
+│  ☑ Headings Line ☐ Link icons      │
+│  ☑ Header Icons                     │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  🔤 FONT                            │
+├─────────────────────────────────────┤
+│  Font Style: [Serif] [Sans] [Mono] │
+│                                     │
+│  Heading Font: [Dropdown]           │
+│  Body Font: [Dropdown]              │
+│                                     │
+│  Apply accent color to:             │
+│  ☑ Name    ☐ Dates/Bars/Bullets    │
+│  ☐ Job title ☐ Headings            │
+│  ☑ Headings Line ☐ Link icons      │
+│  ☑ Header Icons                     │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  📋 ENTRY LAYOUT                    │
+├─────────────────────────────────────┤
+│  Title & subtitle size: [S] [M] [L] │
+│  Subtitle style: [Normal] [Bold] [Italic] [Bold Italic] │
+│  Subtitle placement: [Same Line] [Next Line] │
+│  Description indentation: [Toggle]  │
+│  List style: [Bullet •] [Hyphen -]  │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  📄 FOOTER                          │
+├─────────────────────────────────────┤
+│  Page numbers: [Toggle]             │
+│  Subtitle placement: [Same Line] [Next Line] │
+│  Description indentation: [Toggle]  │
+│  List style: [Bullet] [Hyphen]      │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  🔗 LINK STYLING                    │
+├─────────────────────────────────────┤
+│  ☐ Underline   ☐ Blue color        │
+│  ☑ Name bold                        │
+│  Font: [Body Font ▼] [Custom]       │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  💼 PROFESSIONAL TITLE              │
+├─────────────────────────────────────┤
+│  Size: [S] [M] [L]                  │
+│  Position: [Same Line] [Below]      │
+│  Style: [Normal] [Bold] [Italic] [Bold Italic] │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  📷 PHOTO                           │
+├─────────────────────────────────────┤
+│  Show: [Toggle]                     │
+│  Grayscale: [Toggle]                │
+│  Size: [XS] [S] [M] [L] [XL]        │
+│  ☑ Name bold                        │
+│  Font: [Body Font ▼] [Creative ▼]   │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  💼 PROFESSIONAL TITLE (Duplicate?) │
+├─────────────────────────────────────┤
+│  [Same options as above]            │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  📷 PHOTO (Duplicate section?)      │
+├─────────────────────────────────────┤
+│  Show: [Toggle]                     │
+│  Size: [Grid] [Level] [Compact] [Bubble] │
+│        [Bullet] [Pipe] [New Line] [Comma] │
+│  Subtitle Style: [Dash] [Colon] [Bracket] │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  ❤️ INTERESTS                       │
+├─────────────────────────────────────┤
+│  [Grid] [Compact] [Bubble]          │
+│  [Bullet] [Pipe] [New Line] [Comma] │
+│  Subtitle Style: [Dash] [Colon] [Bracket] │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  📜 CERTIFICATES                    │
+├─────────────────────────────────────┤
+│  [Grid] [Compact] [Bubble]          │
+│  [Bullet] [Pipe] [New Line] [Comma] │
+│  Subtitle Style: [Dash] [Colon] [Bracket] │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  ❤️ INTERESTS (Duplicate?)          │
+├─────────────────────────────────────┤
+│  [Same options]                     │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  📜 CERTIFICATES (Duplicate?)       │
+├─────────────────────────────────────┤
+│  [Same options]                     │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  👤 PROFILE                         │
+├─────────────────────────────────────┤
+│  ☐ Show profile heading             │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  🎓 EDUCATION                       │
+├─────────────────────────────────────┤
+│  Title & Subtitle Order:            │
+│  [Degree - School] [School - Degree]│
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  💼 WORK EXPERIENCE                 │
+├─────────────────────────────────────┤
+│  Order title/subtitle:              │
+│  [Job Title - Employer] [Employer - Job Title] │
+│  Employment History:                │
+│  ☑ Group promotions                 │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  💪 STRENGTHS                       │
+├─────────────────────────────────────┤
+│  Display Options:                   │
+│  [Grid] [Level] [Compact] [Bubble]  │
+│  [Bullet] [Pipe] [New Line] [Comma] │
+│  ☑ Increase column width in tight designs│
+│     to show two grid columns        │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  📝 DECLARATION                     │
+├─────────────────────────────────────┤
+│  To see design options, add a declaration │
+│  [+ Add declaration]                │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  🚀 SHARE YOUR DESIGN AS TEMPLATE   │
+├─────────────────────────────────────┤
+│  Create a private resume template and share │
+│  your best design with your friends │
+│  [Create resume template] Toggle    │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  ❓ MISSING SOMETHING?              │
+├─────────────────────────────────────┤
+│  All ideas and suggestions are welcome! │
+│  Please let us know your thoughts.  │
+│  [Text Input: Hey, I think you...]  │
+│  [Submit]                           │
+└─────────────────────────────────────┘

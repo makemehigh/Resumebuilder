@@ -18,6 +18,7 @@ export default function ResumeEditorContent({
   sections,
   onPersonalDetailsChange,
   onSectionUpdate,
+  onSectionTitleChange,
   onSectionVisibilityToggle,
   onAddCustomSection,
   onEditEntry,
@@ -215,6 +216,8 @@ export default function ResumeEditorContent({
               onPersonalEdit={handlePersonalEdit}
               onSectionEdit={(sectionId) => handleSectionEdit(sectionId)}
               onSectionToggle={handleToggleSection}
+              onSectionUpdate={onSectionUpdate}
+              onSectionTitleChange={onSectionTitleChange}
               onSectionVisibilityToggle={onSectionVisibilityToggle}
               onAddEntry={handleAddEntry}
               onEditEntry={(sectionId, entryId) => handleSectionEdit(sectionId, entryId)}

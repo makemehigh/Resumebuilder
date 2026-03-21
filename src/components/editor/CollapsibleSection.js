@@ -1,11 +1,22 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Eye, EyeOff, Pencil, GripVertical, Trash2, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { useState, useEffect } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import {
+  faGripVertical,
+  faPen,
+  faTrashAlt,
+  faCheck,
+  faTimes,
+  faEye,
+  faEyeSlash,
+  faChevronDown,
+  faPlus
+} from '@fortawesome/free-solid-svg-icons';
 
 function SortableItem({ item, onEdit, onDelete }) {
   const {
@@ -35,7 +46,7 @@ function SortableItem({ item, onEdit, onDelete }) {
         {...listeners}
         className="flex items-center gap-2 cursor-grab active:cursor-grabbing"
       >
-        <GripVertical className="w-4 h-4 text-slate-400" />
+        <FontAwesomeIcon icon={faGripVertical} className="w-4 h-4 text-slate-400" />
         <span 
           className="text-slate-700 flex-1 cursor-pointer"
           onClick={() => onEdit?.(item.id)}
@@ -49,14 +60,14 @@ function SortableItem({ item, onEdit, onDelete }) {
           className="p-1.5 rounded text-blue-600 hover:bg-blue-100"
           title="Edit"
         >
-          <Pencil className="w-3.5 h-3.5" />
+          <FontAwesomeIcon icon={faPen} className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => onDelete?.(item.id)}
           className="p-1.5 rounded text-red-500 hover:bg-red-100"
           title="Delete"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <FontAwesomeIcon icon={faTrashAlt} className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
@@ -69,7 +80,7 @@ export default function CollapsibleSection({
   emoji,
   isExpanded,
   onToggle,
-  onEdit,
+  onTitleChange,
   isVisible = true,
   onVisibilityToggle,
   itemCount = 0,
@@ -84,12 +95,46 @@ export default function CollapsibleSection({
   canAdd = true,
   className = ''
 }) {
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(title);
+  
+  useEffect(() => {
+    setEditedTitle(title);
+  }, [title]);
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  const handleEditClick = () => {
+    setIsEditingTitle(true);
+    if (!isExpanded && onToggle) {
+      onToggle();
+    }
+  };
+
+  const handleSaveTitle = () => {
+    if (onTitleChange && editedTitle.trim()) {
+      onTitleChange(editedTitle.trim());
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditedTitle(title);
+    setIsEditingTitle(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSaveTitle();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
@@ -109,13 +154,38 @@ export default function CollapsibleSection({
         onClick={onToggle}
       >
         <div className="flex items-center gap-3">
-          {emoji ? (
-            <span className="text-lg">{emoji}</span>
-          ) : Icon ? (
-            <Icon className="w-5 h-5 text-slate-500" />
-          ) : null}
-          <span className="font-medium text-slate-800">{title}</span>
-          {itemCount > 0 && (
+          {Icon && (
+            <FontAwesomeIcon icon={Icon} className="w-5 h-5 text-slate-500" />
+          )}
+          {isEditingTitle ? (
+            <div className="flex items-center gap-2 flex-1" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="text"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="flex-1 px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autoFocus
+              />
+              <button
+                onClick={handleSaveTitle}
+                className="p-1 rounded text-green-600 hover:bg-green-50"
+                title="Save"
+              >
+                <FontAwesomeIcon icon={faCheck} className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                className="p-1 rounded text-red-500 hover:bg-red-50"
+                title="Cancel"
+              >
+                <FontAwesomeIcon icon={faTimes} className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <span className="font-medium text-slate-800">{title}</span>
+          )}
+          {!isEditingTitle && itemCount > 0 && (
             <span className="px-2 py-0.5 text-xs bg-slate-100 text-slate-600 rounded-full">
               {itemCount}
             </span>
@@ -131,17 +201,17 @@ export default function CollapsibleSection({
               }`}
               title={isVisible ? 'Hide section' : 'Show section'}
             >
-              {isVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              <FontAwesomeIcon icon={isVisible ? faEye : faEyeSlash} className="w-4 h-4" />
             </button>
           )}
           
-          {onEdit && (
+          {onTitleChange && !isEditingTitle && (
             <button
-              onClick={onEdit}
+              onClick={handleEditClick}
               className="p-1.5 rounded-full text-blue-600 hover:bg-blue-50 transition-colors"
-              title="Edit section"
+              title="Edit section name"
             >
-              <Pencil className="w-4 h-4" />
+              <FontAwesomeIcon icon={faPen} className="w-4 h-4" />
             </button>
           )}
           
@@ -149,7 +219,7 @@ export default function CollapsibleSection({
             animate={{ rotate: isExpanded ? 180 : 0 }}
             transition={{ duration: 0.2 }}
           >
-            <ChevronDown className="w-5 h-5 text-slate-400" />
+            <FontAwesomeIcon icon={faChevronDown} className="w-5 h-5 text-slate-400 cursor-pointer" onClick={onToggle} />
           </motion.div>
         </div>
       </div>
@@ -213,7 +283,7 @@ export default function CollapsibleSection({
                   onClick={onAdd}
                   className="mt-3 w-full py-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
                 >
-                  <Plus className="w-4 h-4" />
+                  <FontAwesomeIcon icon={faPlus} className="w-4 h-4" />
                   {addButtonLabel}
                 </button>
               )}
@@ -241,7 +311,7 @@ export function DraggableSectionItem({
         {...dragHandleProps}
         className="mt-1 cursor-grab text-slate-400 hover:text-slate-600"
       >
-        <GripVertical className="w-4 h-4" />
+        <FontAwesomeIcon icon={faGripVertical} className="w-4 h-4" />
       </div>
       
       <div className="flex-1">
@@ -257,7 +327,7 @@ export function DraggableSectionItem({
             }`}
             title={isVisible ? 'Hide' : 'Show'}
           >
-            {isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+            <FontAwesomeIcon icon={isVisible ? faEye : faEyeSlash} className="w-3.5 h-3.5" />
           </button>
         )}
         
@@ -267,7 +337,7 @@ export function DraggableSectionItem({
             className="p-1.5 rounded text-blue-600 hover:bg-blue-100"
             title="Edit"
           >
-            <Pencil className="w-3.5 h-3.5" />
+            <FontAwesomeIcon icon={faPen} className="w-3.5 h-3.5" />
           </button>
         )}
         
@@ -277,7 +347,7 @@ export function DraggableSectionItem({
             className="p-1.5 rounded text-red-500 hover:bg-red-50"
             title="Delete"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <FontAwesomeIcon icon={faTrashAlt} className="w-3.5 h-3.5" />
           </button>
         )}
       </div>

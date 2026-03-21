@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { useState, useEffect, useRef } from 'react';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, RecaptchaVerifier } from 'firebase/auth';
 import { auth, googleProvider } from '../../src/lib/firebase';
 import { useAuthStore } from '../../src/stores/useAuthStore';
 import { useRouter } from 'next/navigation';
@@ -11,8 +11,36 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [recaptchaVerified, setRecaptchaVerified] = useState(false);
+  const recaptchaRef = useRef(null);
   const { setUser, setLoading, setError, error, isLoading } = useAuthStore();
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !isLogin && !recaptchaRef.current) {
+      const containerId = 'recaptcha-container';
+      if (document.getElementById(containerId) && !recaptchaRef.current) {
+        recaptchaRef.current = new RecaptchaVerifier(auth, containerId, {
+          'size': 'normal',
+          'callback': () => {
+            setRecaptchaVerified(true);
+          },
+          'expired-callback': () => {
+            setRecaptchaVerified(false);
+            recaptchaRef.current?.render();
+          }
+        });
+        recaptchaRef.current.render().catch(console.error);
+      }
+    }
+    
+    return () => {
+      if (recaptchaRef.current) {
+        recaptchaRef.current.clear();
+        recaptchaRef.current = null;
+      }
+    };
+  }, [isLogin]);
 
   const handleEmailAuth = async (e) => {
     e.preventDefault();
@@ -24,12 +52,25 @@ export default function Login() {
       if (isLogin) {
         userCredential = await signInWithEmailAndPassword(auth, email, password);
       } else {
-        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        if (!recaptchaVerified && recaptchaRef.current) {
+          const captchaResult = await recaptchaRef.current.verify();
+          userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          if (captchaResult) {
+            recaptchaRef.current.reset();
+          }
+        } else if (recaptchaVerified) {
+          userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        } else {
+          throw new Error('Please verify you are human');
+        }
       }
       setUser(userCredential.user);
       router.push('/dashboard');
     } catch (err) {
       setError(err.message);
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+      }
     } finally {
       setLoading(false);
     }
@@ -109,6 +150,12 @@ export default function Login() {
               minLength={6}
             />
           </div>
+
+          {!isLogin && (
+            <div className="flex justify-center">
+              <div id="recaptcha-container" data-sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}></div>
+            </div>
+          )}
 
           <button
             type="submit"

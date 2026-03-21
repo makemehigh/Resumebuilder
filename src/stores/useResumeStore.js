@@ -110,6 +110,23 @@ export const useResumeStore = create(
         };
       }),
       
+      updateSectionTitle: (sectionId, title) => set((state) => {
+        if (!state.currentResume) return state;
+        
+        const sections = state.currentResume.content.sections.map(s =>
+          s.id === sectionId ? { ...s, title } : s
+        );
+        
+        return {
+          currentResume: {
+            ...state.currentResume,
+            content: { ...state.currentResume.content, sections },
+            lastEdited: new Date().toISOString(),
+          },
+          hasUnsavedChanges: true,
+        };
+      }),
+      
       reorderSections: (fromIndex, toIndex) => set((state) => {
         if (!state.currentResume) return state;
         

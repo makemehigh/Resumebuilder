@@ -69,6 +69,7 @@ export const TEMPLATES = [
       fontSize: { name: 24, heading: 14, body: 11, subtitle: 10 },
       showIcons: true,
       iconStyle: 'emoji',
+      showSectionUnderline: true,
     },
     sectionOrder: ['experience', 'education', 'skills', 'languages', 'strengths', 'projects', 'certificates', 'interests'],
   },

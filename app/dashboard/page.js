@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../../src/stores/useAuthStore';
@@ -8,11 +8,25 @@ import { useResumeStore } from '../../src/stores/useResumeStore';
 import { TEMPLATES } from '../../src/data/templates';
 
 export default function Dashboard() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, isLoading } = useAuthStore();
   const { resumes, createNewResume, deleteResume, duplicateResume } = useResumeStore();
   const router = useRouter();
   const [showDeleteModal, setShowDeleteModal] = useState(null);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100">
+        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
 
   const handleCreateResume = (templateId = 'atlanic-blue') => {
     setShowTemplateModal(false);

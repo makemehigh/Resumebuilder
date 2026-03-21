@@ -7,20 +7,22 @@ import { useResumeStore } from '../../../src/stores/useResumeStore';
 import { useAuthStore } from '../../../src/stores/useAuthStore';
 import { SECTION_TYPES, TEMPLATES, COLOR_PRESETS, AVAILABLE_FONTS, SECTION_CONFIG } from '../../../src/data/templates';
 import { SECTION_ICONS } from '../../../src/components/editor/sectionManager';
-import { Mail, Phone, MapPin, Linkedin, Github, Globe, User } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEnvelope, faPhone, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
 import { generatePDF } from '../../../src/lib/pdfGenerator';
 import ResumeEditorContent from '../../../src/components/editor/ResumeEditorContent';
 
 export default function ResumeEditor() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, isLoading } = useAuthStore();
   const { 
     currentResume, 
     setCurrentResume, 
     resumes,
     updatePersonalDetails,
     updateSectionContent,
+    updateSectionTitle,
     addSection,
     removeSection,
     toggleSectionVisibility,
@@ -41,6 +43,7 @@ export default function ResumeEditor() {
   const [editingSectionId, setEditingSectionId] = useState(null);
 
   useEffect(() => {
+    if (isLoading) return;
     if (!user) {
       router.push('/login');
       return;
@@ -59,7 +62,7 @@ export default function ResumeEditor() {
     } else {
       router.push('/dashboard');
     }
-  }, [params.id, resumes, user, router, setCurrentResume]);
+  }, [params.id, resumes, user, isLoading, router, setCurrentResume]);
 
   const toggleExpand = (sectionId) => {
     setExpandedSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
@@ -108,7 +111,7 @@ export default function ResumeEditor() {
     }
   };
 
-  if (!currentResume) {
+  if (isLoading || !currentResume) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-100">
         <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
@@ -1141,7 +1144,7 @@ export default function ResumeEditor() {
     const { name: nameSize = templateFontSizes.name || 24, jobTitle: jobTitleSize = templateFontSizes.jobTitle || 14, heading: headingSize = templateFontSizes.heading || 14, body: bodySize = templateFontSizes.body || 11, subtitle: subtitleSize = templateFontSizes.subtitle || 10 } = fontSizes;
 
     const showIcons = template?.styles?.showIcons ?? true;
-    const iconStyle = template?.styles?.iconStyle || 'emoji';
+    const showSectionUnderline = template?.styles?.showSectionUnderline ?? false;
 
     const formatDate = (dateStr) => {
       if (!dateStr) return '';
@@ -1549,23 +1552,24 @@ export default function ResumeEditor() {
     const renderSection = (section) => {
       if (!section) return null;
       const sectionContent = getSectionContent(section);
-      const sectionEmoji = getSectionEmoji(section.id);
+      const SectionIcon = SECTION_ICONS[section.id] || SECTION_ICONS[section.type];
       const sectionTitle = section.title || SECTION_CONFIG[section.id]?.title || section.id;
       
       return (
         <div key={section.id} className="mb-4" style={{ marginBottom: `${sectionSpacing}mm` }}>
           <h2 
-            className="font-semibold mb-2 flex items-center gap-2"
+            className={`font-semibold mb-2 flex items-center gap-2 ${showSectionUnderline ? 'border-b-2 pb-2' : ''}`}
             style={{ 
               fontSize: `${headingSize}px`,
               fontFamily: headingFont,
               color: primaryColor,
               textTransform: 'uppercase',
-              letterSpacing: '0.05em'
+              letterSpacing: '0.05em',
+              borderColor: showSectionUnderline ? primaryColor : 'transparent'
             }}
           >
-            {showIcons && (
-              <span className="text-base">{sectionEmoji}</span>
+            {showIcons && SectionIcon && (
+              <FontAwesomeIcon icon={SectionIcon} className="w-4 h-4" style={{ color: primaryColor }} />
             )}
             {sectionTitle}
           </h2>
@@ -1611,22 +1615,19 @@ export default function ResumeEditor() {
         <div className="text-xs text-slate-600 flex flex-wrap gap-3">
           {content.personalDetails.email && (
             <span className="flex items-center gap-1">
-              {showIcons && iconStyle === 'icon' && <Mail className="w-3 h-3" />}
-              {showIcons && iconStyle === 'emoji' && '📧 '}
+              {showIcons && <FontAwesomeIcon icon={faEnvelope} className="w-3 h-3" />}
               {content.personalDetails.email}
             </span>
           )}
           {content.personalDetails.phone && (
             <span className="flex items-center gap-1">
-              {showIcons && iconStyle === 'icon' && <Phone className="w-3 h-3" />}
-              {showIcons && iconStyle === 'emoji' && '📱 '}
+              {showIcons && <FontAwesomeIcon icon={faPhone} className="w-3 h-3" />}
               {content.personalDetails.phone}
             </span>
           )}
           {content.personalDetails.location && (
             <span className="flex items-center gap-1">
-              {showIcons && iconStyle === 'icon' && <MapPin className="w-3 h-3" />}
-              {showIcons && iconStyle === 'emoji' && '📍 '}
+              {showIcons && <FontAwesomeIcon icon={faMapMarkerAlt} className="w-3 h-3" />}
               {content.personalDetails.location}
             </span>
           )}
@@ -1691,22 +1692,19 @@ export default function ResumeEditor() {
                 <div className="text-xs text-slate-600 space-y-1 mt-3">
                   {content.personalDetails.email && (
                     <div className="flex items-center gap-1">
-                      {showIcons && iconStyle === 'icon' && <Mail className="w-3 h-3" />}
-                      {showIcons && iconStyle === 'emoji' && '📧 '}
+                      {showIcons && <FontAwesomeIcon icon={faEnvelope} className="w-3 h-3" />}
                       {content.personalDetails.email}
                     </div>
                   )}
                   {content.personalDetails.phone && (
                     <div className="flex items-center gap-1">
-                      {showIcons && iconStyle === 'icon' && <Phone className="w-3 h-3" />}
-                      {showIcons && iconStyle === 'emoji' && '📱 '}
+                      {showIcons && <FontAwesomeIcon icon={faPhone} className="w-3 h-3" />}
                       {content.personalDetails.phone}
                     </div>
                   )}
                   {content.personalDetails.location && (
                     <div className="flex items-center gap-1">
-                      {showIcons && iconStyle === 'icon' && <MapPin className="w-3 h-3" />}
-                      {showIcons && iconStyle === 'emoji' && '📍 '}
+                      {showIcons && <FontAwesomeIcon icon={faMapMarkerAlt} className="w-3 h-3" />}
                       {content.personalDetails.location}
                     </div>
                   )}
@@ -1802,7 +1800,7 @@ export default function ResumeEditor() {
 
       <div className="flex flex-1 overflow-hidden">
         {!leftPanelCollapsed && (
-          <aside className="w-96 bg-white border-r border-slate-200 overflow-y-auto">
+          <aside className="w-[500px] bg-white border-r border-slate-200 overflow-y-auto">
             <div className="p-4">
               <div className="flex border-b border-slate-200 mb-4">
                 <button
@@ -1833,6 +1831,7 @@ export default function ResumeEditor() {
                   sections={currentResume.content.sections}
                   onPersonalDetailsChange={handlePersonalDetailChange}
                   onSectionUpdate={handleSectionChange}
+                  onSectionTitleChange={updateSectionTitle}
                   onSectionVisibilityToggle={toggleSectionVisibility}
                   onAddCustomSection={() => setShowCustomSectionModal(true)}
                   onEditEntry={handleEditEntry}

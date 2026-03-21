@@ -1,9 +1,10 @@
 'use client';
 
-import { User, Mail, Phone, MapPin, Plus } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import CollapsibleSection from './CollapsibleSection';
 import { sectionManager, SECTION_ICONS, formatEntryTitle, getEntryPreview, isEntryEmpty } from './sectionManager';
 import { SECTION_CONFIG } from '../../../src/data/templates';
+import { faUser, faEnvelope, faPhone, faMapMarkerAlt, faPlus } from '@fortawesome/free-solid-svg-icons';
 
 export default function Screen1MainView({
   personalDetails,
@@ -11,6 +12,8 @@ export default function Screen1MainView({
   onPersonalEdit,
   onSectionEdit,
   onSectionToggle,
+  onSectionUpdate,
+  onSectionTitleChange,
   onSectionVisibilityToggle,
   onAddEntry,
   onEditEntry,
@@ -62,7 +65,7 @@ export default function Screen1MainView({
           onClick={onPersonalEdit}
         >
           <div className="flex items-center gap-3">
-            <User className="w-5 h-5 text-slate-500" />
+            <FontAwesomeIcon icon={faUser} className="w-5 h-5 text-slate-500" />
             <span className="font-medium text-slate-800">Personal Information</span>
           </div>
           <button
@@ -86,19 +89,19 @@ export default function Screen1MainView({
           <div className="flex flex-wrap gap-4 text-sm text-slate-600">
             {personalDetails?.email && (
               <div className="flex items-center gap-1.5">
-                <Mail className="w-4 h-4 text-slate-400" />
+                <FontAwesomeIcon icon={faEnvelope} className="w-4 h-4 text-slate-400" />
                 <span>{personalDetails.email}</span>
               </div>
             )}
             {personalDetails?.phone && (
               <div className="flex items-center gap-1.5">
-                <Phone className="w-4 h-4 text-slate-400" />
+                <FontAwesomeIcon icon={faPhone} className="w-4 h-4 text-slate-400" />
                 <span>{personalDetails.phone}</span>
               </div>
             )}
             {personalDetails?.location && (
               <div className="flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-slate-400" />
+                <FontAwesomeIcon icon={faMapMarkerAlt} className="w-4 h-4 text-slate-400" />
                 <span>{personalDetails.location}</span>
               </div>
             )}
@@ -122,17 +125,15 @@ export default function Screen1MainView({
           const isCustom = section.type === 'custom';
           const items = getSectionItems(section.id);
           const Icon = isCustom ? null : (SECTION_ICONS[section.id] || SECTION_ICONS[section.type]);
-          const emoji = isCustom ? '📋' : (SECTION_CONFIG[section.id]?.emoji || SECTION_CONFIG[section.type]?.emoji || config?.emoji);
           
           return (
             <CollapsibleSection
               key={section.id}
               title={section.title || config?.title || section.id}
               icon={Icon}
-              emoji={emoji}
               isExpanded={expandedSections[section.id] || false}
               onToggle={() => onSectionToggle(section.id)}
-              onEdit={() => onSectionEdit(section.id)}
+              onTitleChange={(newTitle) => onSectionTitleChange?.(section.id, newTitle)}
               isVisible={section.isVisible !== false}
               onVisibilityToggle={() => handleSectionVisibilityToggle(section.id)}
               itemCount={items.length}
@@ -153,7 +154,7 @@ export default function Screen1MainView({
         onClick={onAddCustomSection}
         className="w-full py-3 px-4 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
       >
-        <Plus className="w-5 h-5" />
+        <FontAwesomeIcon icon={faPlus} className="w-5 h-5" />
         <span className="font-medium">Add Custom Section</span>
       </button>
     </div>

@@ -160,7 +160,7 @@ export default function RichTextEditor({
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
-        className="min-h-[120px] p-3 text-sm focus:outline-none"
+        className="min-h-[120px] p-3 text-sm focus:outline-none editor-content"
         style={{ 
           whiteSpace: 'pre-wrap',
           wordWrap: 'break-word',
@@ -181,15 +181,22 @@ export default function RichTextEditor({
         
         .editor-content ul,
         .editor-content ol {
-          margin-left: 1.5rem;
+          margin-left: 1.5rem !important;
           margin-top: 0.5rem;
           margin-bottom: 0.5rem;
-          padding-left: 0.5rem;
+          padding-left: 1.5rem !important;
+          list-style: disc !important;
+        }
+        
+        .editor-content ol {
+          list-style: decimal !important;
         }
         
         .editor-content li {
           margin-top: 0.25rem;
           margin-bottom: 0.25rem;
+          list-style-position: outside;
+          list-style: inherit !important;
         }
         
         .editor-content p {

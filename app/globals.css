@@ -44,3 +44,20 @@ a {
     @apply bg-white rounded-xl shadow-sm border border-gray-100 p-4;
   }
 }
+
+.prose ul,
+.prose ol {
+  list-style: disc !important;
+  margin-left: 1.25rem !important;
+  padding-left: 1.25rem !important;
+}
+
+.prose ol {
+  list-style: decimal !important;
+}
+
+.prose li {
+  list-style: inherit !important;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}

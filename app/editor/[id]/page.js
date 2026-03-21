@@ -37,6 +37,8 @@ export default function ResumeEditor() {
   const [customizeTab, setCustomizeTab] = useState('colors');
   const [showCustomSectionModal, setShowCustomSectionModal] = useState(false);
   const [customSectionTitle, setCustomSectionTitle] = useState('');
+  const [editingEntry, setEditingEntry] = useState(null);
+  const [editingSectionId, setEditingSectionId] = useState(null);
 
   useEffect(() => {
     if (!user) {
@@ -120,6 +122,25 @@ export default function ResumeEditor() {
     const newItems = items.map(item => 
       item.id === itemId ? { ...item, [field]: !item[field] } : item
     );
+    handleSectionChange(sectionId, { ...section.content, items: newItems });
+  };
+
+  const handleEditEntry = (sectionId, entryId) => {
+    setActiveSection(sectionId);
+    const section = currentResume.content.sections.find(s => s.id === sectionId);
+    const entry = section?.content?.items?.find(i => i.id === entryId);
+    if (entry) {
+      setEditingEntry(entry);
+      setEditingSectionId(sectionId);
+    }
+  };
+
+  const handleDeleteEntry = (sectionId, entryId) => {
+    const section = currentResume.content.sections.find(s => s.id === sectionId);
+    if (!section) return;
+    
+    const currentItems = section?.content?.items || [];
+    const newItems = currentItems.filter(item => item.id !== entryId);
     handleSectionChange(sectionId, { ...section.content, items: newItems });
   };
 
@@ -629,7 +650,7 @@ export default function ResumeEditor() {
     };
     
     const addItem = () => {
-      const newItems = [...items, { id: `custom-${Date.now()}`, title: '', subtitle: '', description: '', date: '' }];
+      const newItems = [...items, { id: `custom-${Date.now()}`, title: '', subtitle: '', startDate: '', endDate: '', description: '' }];
       handleSectionChange(section.id, { ...section.content, items: newItems });
     };
     
@@ -667,15 +688,27 @@ export default function ResumeEditor() {
                   placeholder="e.g., Company Name, Year"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Date</label>
-                <input
-                  type="text"
-                  value={item.date || ''}
-                  onChange={(e) => updateItem(item.id, 'date', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., 2023, Jan 2020 - Dec 2023"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Start Date</label>
+                  <input
+                    type="text"
+                    value={item.startDate || ''}
+                    onChange={(e) => updateItem(item.id, 'startDate', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Jan 2020"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">End Date</label>
+                  <input
+                    type="text"
+                    value={item.endDate || ''}
+                    onChange={(e) => updateItem(item.id, 'endDate', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Present"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1">Description</label>
@@ -1087,15 +1120,41 @@ export default function ResumeEditor() {
 
   const renderResumePreview = () => {
     const { customization, content, templateId } = currentResume;
-    const { primaryColor = '#1e40af', accentColor = '#3b82f6', applyTo = {} } = customization?.colors || {};
-    const { fonts = {}, fontSizes = {} } = customization?.fonts || {};
-    const { pageMargin = 10, lineHeight = 1.5, sectionSpacing = 16 } = customization?.spacing || {};
-    const { headingFont = 'Inter', bodyFont = 'Open Sans' } = fonts;
-    const { name: nameSize = 24, jobTitle: jobTitleSize = 14, heading: headingSize = 14, body: bodySize = 11, subtitle: subtitleSize = 10 } = fontSizes;
-
+    
     const template = TEMPLATES.find(t => t.id === templateId) || TEMPLATES[0];
+    const templateStyles = template?.styles || {};
+    
+    const { primaryColor = templateStyles.primaryColor || '#1e40af', accentColor = templateStyles.accentColor || '#3b82f6', applyTo = {} } = customization?.colors || {};
+    const { fonts = {}, fontSizes = {} } = customization?.fonts || {};
+    const { pageMargin = template?.layout?.pageMargin || 10, lineHeight = 1.5, sectionSpacing = 16 } = customization?.spacing || {};
+    const { headingFont = templateStyles.fontHeading || 'Inter', bodyFont = templateStyles.fontBody || 'Open Sans' } = fonts;
+    const templateFontSizes = templateStyles.fontSize || {};
+    const { name: nameSize = templateFontSizes.name || 24, jobTitle: jobTitleSize = templateFontSizes.jobTitle || 14, heading: headingSize = templateFontSizes.heading || 14, body: bodySize = templateFontSizes.body || 11, subtitle: subtitleSize = templateFontSizes.subtitle || 10 } = fontSizes;
+
     const showIcons = template?.styles?.showIcons ?? true;
     const iconStyle = template?.styles?.iconStyle || 'emoji';
+
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+      if (typeof dateStr === 'string' && dateStr.includes('T')) {
+        const date = new Date(dateStr);
+        if (!isNaN(date)) {
+          return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+      }
+      return dateStr;
+    };
+
+    const formatDateRange = (start, end) => {
+      const startFormatted = formatDate(start);
+      const endFormatted = formatDate(end);
+      if (startFormatted && endFormatted) {
+        return `${startFormatted} - ${endFormatted}`;
+      }
+      if (startFormatted) return startFormatted;
+      if (endFormatted) return endFormatted;
+      return '';
+    };
 
     const styles = {
       fontFamily: bodyFont,
@@ -1103,306 +1162,576 @@ export default function ResumeEditor() {
     };
 
     const getSectionEmoji = (sectionId) => {
-      return SECTION_CONFIG[sectionId]?.emoji || SECTION_CONFIG[section.type]?.emoji || '📄';
+      const section = content.sections.find(s => s.id === sectionId);
+      const sectionType = section?.type || sectionId;
+      return SECTION_CONFIG[sectionId]?.emoji || SECTION_CONFIG[sectionType]?.emoji || '📋';
     };
 
     const hasContent = (section) => {
+      if (!section.content) return false;
+      
       if (section.type === SECTION_TYPES.PROFILE) {
-        return section.content?.text && section.content.text.trim() !== '';
+        const text = section.content.text || '';
+        return text.trim() !== '' && text !== '<br>' && text !== '<p><br></p>';
       }
+      
       if (section.type === SECTION_TYPES.SKILLS) {
         const categories = section.content?.categories || [];
-        return categories.some(c => c.skills && c.skills.length > 0);
+        const hasSkills = categories.some(c => c.skills && c.skills.length > 0);
+        const hasSkillItems = (section.content?.items || []).some(i => i.name);
+        return hasSkills || hasSkillItems;
       }
+      
+      if (section.type === SECTION_TYPES.LANGUAGES || section.type === SECTION_TYPES.STRENGTHS || section.type === SECTION_TYPES.INTERESTS) {
+        return (section.content?.items || []).some(item => item.name);
+      }
+      
+      if (section.type === SECTION_TYPES.CUSTOM) {
+        return (section.content?.items || []).some(item => item.title);
+      }
+      
       if (section.content?.items) {
         return section.content.items.some(item => {
-          return Object.values(item).some(v => v && typeof v === 'string' && v.trim() !== '');
+          if (!item) return false;
+          return Object.values(item).some(v => {
+            if (!v) return false;
+            if (typeof v === 'string' && v.trim() !== '') return true;
+            if (Array.isArray(v) && v.length > 0) return true;
+            return false;
+          });
         });
       }
+      
       return false;
     };
 
-    const visibleSections = content.sections.filter(s => s.isVisible && hasContent(s));
+    const sectionOrder = template?.sectionOrder || content.sections.map(s => s.id);
+    const orderedSections = sectionOrder
+      .map(id => content.sections.find(s => s.id === id))
+      .filter(s => s && s.isVisible !== false && s.type !== SECTION_TYPES.PROFILE);
+    
+    const customSections = content.sections.filter(
+      s => s.isVisible !== false && !sectionOrder.includes(s.id) && s.type !== SECTION_TYPES.PROFILE
+    );
+    const allOrderedSections = [...orderedSections, ...customSections];
 
-    return (
-      <div id="resume-preview" className="bg-white p-6" style={styles}>
-        <div className="mb-4 pb-4 border-b-2" style={{ borderColor: primaryColor }}>
-          <div className="flex items-center gap-3 mb-2">
-            {content.personalDetails.photo && (
-              <img 
-                src={content.personalDetails.photo} 
-                alt="Profile" 
-                className="w-16 h-16 rounded-full object-cover"
-              />
-            )}
-            <div>
-              <h1 
-                className="font-bold"
-                style={{ 
-                  fontSize: `${nameSize}px`,
-                  fontFamily: headingFont,
-                  color: applyTo.name ? primaryColor : '#000'
-                }}
-              >
-                {content.personalDetails.fullName || 'Your Name'}
-              </h1>
-              <p 
-                className="text-sm"
-                style={{ 
-                  fontSize: `${jobTitleSize}px`,
-                  color: applyTo.jobTitle ? accentColor : '#666'
-                }}
-              >
-                {content.personalDetails.jobTitle || 'Job Title'}
-              </p>
-            </div>
-          </div>
-          <div className="text-xs text-slate-600 flex flex-wrap gap-3">
-            {content.personalDetails.email && (
-              <span className="flex items-center gap-1">
-                {showIcons && iconStyle === 'icon' && <Mail className="w-3 h-3" />}
-                {showIcons && iconStyle === 'emoji' && '📧 '}
-                {content.personalDetails.email}
-              </span>
-            )}
-            {content.personalDetails.phone && (
-              <span className="flex items-center gap-1">
-                {showIcons && iconStyle === 'icon' && <Phone className="w-3 h-3" />}
-                {showIcons && iconStyle === 'emoji' && '📱 '}
-                {content.personalDetails.phone}
-              </span>
-            )}
-            {content.personalDetails.location && (
-              <span className="flex items-center gap-1">
-                {showIcons && iconStyle === 'icon' && <MapPin className="w-3 h-3" />}
-                {showIcons && iconStyle === 'emoji' && '📍 '}
-                {content.personalDetails.location}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div style={{ margin: `${pageMargin}mm` }}>
-          {visibleSections.map((section) => (
-            <div key={section.id} className="mb-4" style={{ marginBottom: `${sectionSpacing}mm` }}>
-              <h2 
-                className="font-semibold mb-2 flex items-center gap-2"
-                style={{ 
-                  fontSize: `${headingSize}px`,
-                  fontFamily: headingFont,
-                  color: primaryColor,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em'
-                }}
-              >
-                {showIcons && (
-                  <span className="text-base">{getSectionEmoji(section.id)}</span>
+    const getSectionContent = (section) => {
+      if (!section.content) return null;
+      
+      if (section.type === SECTION_TYPES.PROFILE) {
+        const text = section.content.text || '';
+        if (text.trim() === '' || text === '<br>' || text === '<p><br></p>') return null;
+        return (
+          <div 
+            className="text-sm prose prose-sm max-w-none" 
+            style={{ fontSize: `${bodySize}px` }}
+            dangerouslySetInnerHTML={{ __html: section.content.text }}
+          />
+        );
+      }
+      
+      if (section.type === SECTION_TYPES.SKILLS) {
+        const categories = section.content?.categories || [];
+        const hasCategorySkills = categories.filter(c => c.skills && c.skills.length > 0);
+        const skillItems = (section.content?.items || []).filter(i => i.name);
+        
+        if (hasCategorySkills.length === 0 && skillItems.length === 0) return null;
+        
+        return (
+          <div className="space-y-2">
+            {hasCategorySkills.map(cat => (
+              <div key={cat.id} className="text-sm">
+                {cat.name && <span className="font-medium">{cat.name}: </span>}
+                <span style={{ fontSize: `${bodySize}px` }}>
+                  {cat.skills.filter(Boolean).join(', ')}
+                </span>
+              </div>
+            ))}
+            {skillItems.map(item => (
+              <div key={item.id} className="text-sm">
+                <div className="flex items-center gap-2">
+                  <span style={{ fontSize: `${bodySize}px` }}>{item.name}</span>
+                  {item.level > 0 && (
+                    <div className="flex gap-0.5">
+                      {[1,2,3,4,5].map(l => (
+                        <div 
+                          key={l} 
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: l <= item.level ? accentColor : '#e5e7eb' }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {item.description && (
+                  <p className="text-xs text-slate-500 mt-1">{item.description}</p>
                 )}
-                {section.title}
-              </h2>
-              
-              {section.type === SECTION_TYPES.PROFILE && section.content?.text && (
-                <div 
-                  className="text-sm prose prose-sm max-w-none" 
-                  style={{ fontSize: `${bodySize}px` }}
-                  dangerouslySetInnerHTML={{ __html: section.content.text }}
-                />
-              )}
-
-              {section.type === SECTION_TYPES.SKILLS && (
-                <div className="space-y-2">
-                  {(section.content?.categories || []).filter(c => c.name || (c.skills && c.skills.length > 0)).map(cat => (
-                    <div key={cat.id} className="text-sm">
-                      {cat.name && <span className="font-medium">{cat.name}: </span>}
-                      <span style={{ fontSize: `${bodySize}px` }}>
-                        {(cat.skills || []).filter(Boolean).join(', ')}
-                      </span>
-                    </div>
-                  ))}
-                  {(section.content?.items || []).filter(i => i.name).map(item => (
-                    <div key={item.id} className="flex items-center gap-2">
-                      <span style={{ fontSize: `${bodySize}px` }}>{item.name}</span>
-                      {item.level > 0 && (
-                        <div className="flex gap-0.5">
-                          {[1,2,3,4,5].map(l => (
-                            <div 
-                              key={l} 
-                              className="w-2 h-2 rounded-full"
-                              style={{ backgroundColor: l <= item.level ? accentColor : '#e5e7eb' }}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {section.type === SECTION_TYPES.LANGUAGES && (
-                <div className="space-y-2">
-                  {(section.content?.items || []).filter(i => i.name).map(item => (
-                    <div key={item.id} className="flex items-center justify-between text-sm">
-                      <span style={{ fontSize: `${bodySize}px` }}>{item.name}</span>
-                      {item.level > 0 && (
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-0.5">
-                            {[1,2,3,4,5].map(l => (
-                              <div 
-                                key={l} 
-                                className="w-2 h-2 rounded-full"
-                                style={{ backgroundColor: l <= item.level ? accentColor : '#e5e7eb' }}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-xs text-slate-500">
-                            {['', 'Beginner', 'Elementary', 'Intermediate', 'Advanced', 'Native'][item.level] || ''}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {section.type === SECTION_TYPES.STRENGTHS && (
-                <div className="space-y-1">
-                  {(section.content?.items || []).filter(i => i.name).map(item => (
-                    <div key={item.id} className="flex items-center gap-2 text-sm">
-                      <span style={{ fontSize: `${bodySize}px` }}>{item.name}</span>
+              </div>
+            ))}
+          </div>
+        );
+      }
+      
+      if (section.type === SECTION_TYPES.LANGUAGES) {
+        const items = (section.content?.items || []).filter(i => i.name);
+        if (items.length === 0) return null;
+        
+        return (
+          <div className="space-y-2">
+            {items.map(item => (
+              <div key={item.id} className="text-sm">
+                <div className="flex items-center justify-between">
+                  <span style={{ fontSize: `${bodySize}px` }}>{item.name}</span>
+                  {item.level > 0 && (
+                    <div className="flex items-center gap-2">
                       <div className="flex gap-0.5">
                         {[1,2,3,4,5].map(l => (
                           <div 
                             key={l} 
                             className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: l <= (item.level || 0) ? accentColor : '#e5e7eb' }}
+                            style={{ backgroundColor: l <= item.level ? accentColor : '#e5e7eb' }}
                           />
                         ))}
                       </div>
+                      <span className="text-xs text-slate-500">
+                        {['', 'Beginner', 'Elementary', 'Intermediate', 'Advanced', 'Native'][item.level] || ''}
+                      </span>
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
-
-              {section.type === SECTION_TYPES.INTERESTS && (
-                <div className="flex flex-wrap gap-2">
-                  {(section.content?.items || []).filter(i => i.name).map(item => (
-                    <span key={item.id} className="px-2 py-1 text-xs rounded" style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}>
-                      {item.name}
+                {item.description && (
+                  <p className="text-xs text-slate-500 mt-1">{item.description}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      }
+      
+      if (section.type === SECTION_TYPES.STRENGTHS) {
+        const items = (section.content?.items || []).filter(i => i.name);
+        if (items.length === 0) return null;
+        
+        return (
+          <div className="space-y-2">
+            {items.map(item => (
+              <div key={item.id} className="text-sm">
+                <div className="flex items-center gap-2">
+                  <span style={{ fontSize: `${bodySize}px` }}>{item.name}</span>
+                  <div className="flex gap-0.5">
+                    {[1,2,3,4,5].map(l => (
+                      <div 
+                        key={l} 
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: l <= (item.level || 0) ? accentColor : '#e5e7eb' }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                {item.description && (
+                  <p className="text-xs text-slate-500 mt-1">{item.description}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      }
+      
+      if (section.type === SECTION_TYPES.INTERESTS) {
+        const items = (section.content?.items || []).filter(i => i.name);
+        if (items.length === 0) return null;
+        
+        return (
+          <div className="space-y-2">
+            {items.map(item => (
+              <div key={item.id}>
+                <span className="px-2 py-1 text-xs rounded" style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}>
+                  {item.name}
+                </span>
+                {item.description && (
+                  <p className="text-xs text-slate-500 mt-1 ml-1">{item.description}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      }
+      
+      if (section.type === SECTION_TYPES.EMPLOYMENT) {
+        const items = (section.content?.items || []).filter(i => i.jobTitle || i.employer || i.title || i.subtitle);
+        if (items.length === 0) return null;
+        
+        return (
+          <div className="space-y-2">
+            {items.map(item => (
+              <div key={item.id}>
+                <div className="flex justify-between">
+                  <span className="font-medium" style={{ fontSize: `${subtitleSize}px` }}>{item.jobTitle || item.title}</span>
+                  <span className="text-slate-500" style={{ fontSize: `${subtitleSize}px` }}>
+                    {formatDateRange(item.startDate, item.endDate) || (item.isCurrentRole ? 'Present' : '')}
+                  </span>
+                </div>
+                <div className="text-sm text-slate-600" style={{ fontSize: `${bodySize}px` }}>
+                  {item.employer || item.subtitle}{item.location ? `, ${item.location}` : ''}
+                </div>
+                {item.description && (
+                  <div 
+                    className="text-sm mt-1 prose prose-sm max-w-none" 
+                    style={{ fontSize: `${bodySize}px` }}
+                    dangerouslySetInnerHTML={{ __html: item.description }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      }
+      
+      if (section.type === SECTION_TYPES.EDUCATION) {
+        const items = (section.content?.items || []).filter(i => i.degree || i.school || i.title || i.subtitle);
+        if (items.length === 0) return null;
+        
+        return (
+          <div className="space-y-2">
+            {items.map(item => (
+              <div key={item.id}>
+                <div className="flex justify-between">
+                  <span className="font-medium" style={{ fontSize: `${subtitleSize}px` }}>{item.degree || item.title}</span>
+                  <span className="text-slate-500" style={{ fontSize: `${subtitleSize}px` }}>
+                    {formatDateRange(item.startDate, item.endDate) || (item.isCurrentlyStudying ? 'Present' : '')}
+                  </span>
+                </div>
+                <div className="text-sm text-slate-600" style={{ fontSize: `${bodySize}px` }}>
+                  {item.school || item.subtitle}{item.location ? `, ${item.location}` : ''}
+                </div>
+                {item.description && (
+                  <div 
+                    className="text-sm mt-1 prose prose-sm max-w-none" 
+                    style={{ fontSize: `${bodySize}px` }}
+                    dangerouslySetInnerHTML={{ __html: item.description }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      }
+      
+      if (section.type === SECTION_TYPES.CERTIFICATES) {
+        const items = (section.content?.items || []).filter(i => i.name || i.title);
+        if (items.length === 0) return null;
+        
+        return (
+          <div className="space-y-2">
+            {items.map(item => (
+              <div key={item.id}>
+                <div className="flex justify-between items-start">
+                  <span className="font-medium" style={{ fontSize: `${subtitleSize}px` }}>{item.name || item.title}</span>
+                  {(item.startDate || item.endDate) && (
+                    <span className="text-slate-500 text-xs">
+                      {formatDateRange(item.startDate, item.endDate)}
                     </span>
-                  ))}
+                  )}
                 </div>
-              )}
+                {(item.issuer || item.subtitle) && (
+                  <p className="text-sm text-slate-600" style={{ fontSize: `${bodySize}px` }}>
+                    {item.issuer || item.subtitle}
+                    {item.location ? `, ${item.location}` : ''}
+                  </p>
+                )}
+                {item.description && (
+                  <div 
+                    className="text-sm mt-1 prose prose-sm max-w-none" 
+                    style={{ fontSize: `${bodySize}px` }}
+                    dangerouslySetInnerHTML={{ __html: item.description }}
+                  />
+                )}
+                {item.credentialId && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    <span className="font-medium">Credential ID: </span>{item.credentialId}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      }
+      
+      if (section.type === SECTION_TYPES.PROJECTS) {
+        const items = (section.content?.items || []).filter(i => i.name || i.title);
+        if (items.length === 0) return null;
+        
+        return (
+          <div className="space-y-2">
+            {items.map(item => (
+              <div key={item.id}>
+                <div className="flex justify-between items-start">
+                  <span className="font-medium" style={{ fontSize: `${subtitleSize}px` }}>
+                    {item.name || item.title}
+                  </span>
+                  {(item.startDate || item.endDate) && (
+                    <span className="text-slate-500 text-xs">
+                      {formatDateRange(item.startDate, item.endDate)}
+                    </span>
+                  )}
+                </div>
+                {item.url && (
+                  <a href={item.url} className="text-xs text-blue-600 hover:underline" target="_blank">
+                    {item.url}
+                  </a>
+                )}
+                {item.subtitle && (
+                  <p className="text-sm text-slate-600" style={{ fontSize: `${bodySize}px` }}>
+                    {item.subtitle}
+                    {item.location ? `, ${item.location}` : ''}
+                  </p>
+                )}
+                {item.description && (
+                  <div 
+                    className="text-sm mt-1 prose prose-sm max-w-none" 
+                    style={{ fontSize: `${bodySize}px` }}
+                    dangerouslySetInnerHTML={{ __html: item.description }}
+                  />
+                )}
+                {item.technologies?.length > 0 && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    <span className="font-medium">Technologies: </span>{item.technologies.join(', ')}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      }
+      
+      if (section.type === SECTION_TYPES.CUSTOM) {
+        const items = (section.content?.items || []).filter(i => i.title);
+        if (items.length === 0) return null;
+        
+        return (
+          <div className="space-y-2">
+            {items.map(item => (
+              <div key={item.id}>
+                <div className="flex justify-between items-start">
+                  <span className="font-medium" style={{ fontSize: `${subtitleSize}px` }}>{item.title}</span>
+                  {(item.startDate || item.endDate) && (
+                    <span className="text-slate-500 text-xs">
+                      {formatDateRange(item.startDate, item.endDate)}
+                    </span>
+                  )}
+                </div>
+                {item.subtitle && <p className="text-sm text-slate-600" style={{ fontSize: `${bodySize}px` }}>{item.subtitle}</p>}
+                {item.description && (
+                  <div 
+                    className="text-sm mt-1 prose prose-sm max-w-none" 
+                    style={{ fontSize: `${bodySize}px` }}
+                    dangerouslySetInnerHTML={{ __html: item.description }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      }
+      
+      return null;
+    };
 
-              {section.type === SECTION_TYPES.EMPLOYMENT && (
-                <div className="space-y-2">
-                  {(section.content?.items || []).filter(i => i.jobTitle || i.employer).map(item => (
-                    <div key={item.id}>
-                      <div className="flex justify-between">
-                        <span className="font-medium" style={{ fontSize: `${subtitleSize}px` }}>{item.jobTitle}</span>
-                        <span className="text-slate-500" style={{ fontSize: `${subtitleSize}px` }}>
-                          {item.startDate}{item.endDate ? ` - ${item.endDate}` : item.isCurrentRole ? ' - Present' : ''}
-                        </span>
-                      </div>
-                      <div className="text-sm text-slate-600" style={{ fontSize: `${bodySize}px` }}>
-                        {item.employer}{item.location ? `, ${item.location}` : ''}
-                      </div>
-                      {item.description && (
-                        <div 
-                          className="text-sm mt-1 prose prose-sm max-w-none" 
-                          style={{ fontSize: `${bodySize}px` }}
-                          dangerouslySetInnerHTML={{ __html: item.description }}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {section.type === SECTION_TYPES.EDUCATION && (
-                <div className="space-y-2">
-                  {(section.content?.items || []).filter(i => i.degree || i.school).map(item => (
-                    <div key={item.id}>
-                      <div className="flex justify-between">
-                        <span className="font-medium" style={{ fontSize: `${subtitleSize}px` }}>{item.degree}</span>
-                        <span className="text-slate-500" style={{ fontSize: `${subtitleSize}px` }}>
-                          {item.startDate}{item.endDate ? ` - ${item.endDate}` : ''}
-                        </span>
-                      </div>
-                      <div className="text-sm text-slate-600" style={{ fontSize: `${bodySize}px` }}>
-                        {item.school}{item.location ? `, ${item.location}` : ''}
-                      </div>
-                      {item.description && (
-                        <div 
-                          className="text-sm mt-1 prose prose-sm max-w-none" 
-                          style={{ fontSize: `${bodySize}px` }}
-                          dangerouslySetInnerHTML={{ __html: item.description }}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {section.type === SECTION_TYPES.CERTIFICATES && (
-                <div className="space-y-2">
-                  {(section.content?.items || []).filter(i => i.name).map(item => (
-                    <div key={item.id}>
-                      <span className="font-medium" style={{ fontSize: `${bodySize}px` }}>{item.name}</span>
-                      <span className="text-sm text-slate-600"> - {item.issuer}</span>
-                      {item.date && <span className="text-sm text-slate-500"> ({item.date})</span>}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {section.type === SECTION_TYPES.PROJECTS && (
-                <div className="space-y-2">
-                  {(section.content?.items || []).filter(i => i.name).map(item => (
-                    <div key={item.id}>
-                      <div className="font-medium" style={{ fontSize: `${bodySize}px` }}>
-                        {item.name}
-                        {item.url && <a href={item.url} className="ml-2 text-blue-600 text-xs" target="_blank">Link</a>}
-                      </div>
-                      {item.description && (
-                        <div 
-                          className="text-sm prose prose-sm max-w-none" 
-                          style={{ fontSize: `${bodySize}px` }}
-                          dangerouslySetInnerHTML={{ __html: item.description }}
-                        />
-                      )}
-                      {item.technologies?.length > 0 && (
-                        <p className="text-xs text-slate-500 mt-1">
-                          <span className="font-medium">Technologies: </span>{item.technologies.join(', ')}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {section.type === SECTION_TYPES.CUSTOM && (
-                <div className="space-y-2">
-                  {(section.content?.items || []).filter(i => i.title).map(item => (
-                    <div key={item.id}>
-                      <div className="flex justify-between items-start">
-                        <span className="font-medium" style={{ fontSize: `${bodySize}px` }}>{item.title}</span>
-                        {item.date && <span className="text-slate-500 text-xs">{item.date}</span>}
-                      </div>
-                      {item.subtitle && <p className="text-sm text-slate-600" style={{ fontSize: `${bodySize}px` }}>{item.subtitle}</p>}
-                      {item.description && (
-                        <div 
-                          className="text-sm mt-1 prose prose-sm max-w-none" 
-                          style={{ fontSize: `${bodySize}px` }}
-                          dangerouslySetInnerHTML={{ __html: item.description }}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+    const renderSection = (section) => {
+      if (!section) return null;
+      const sectionContent = getSectionContent(section);
+      const sectionEmoji = getSectionEmoji(section.id);
+      const sectionTitle = section.title || SECTION_CONFIG[section.id]?.title || section.id;
+      
+      return (
+        <div key={section.id} className="mb-4" style={{ marginBottom: `${sectionSpacing}mm` }}>
+          <h2 
+            className="font-semibold mb-2 flex items-center gap-2"
+            style={{ 
+              fontSize: `${headingSize}px`,
+              fontFamily: headingFont,
+              color: primaryColor,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}
+          >
+            {showIcons && (
+              <span className="text-base">{sectionEmoji}</span>
+            )}
+            {sectionTitle}
+          </h2>
+          {sectionContent || (
+            <p className="text-xs text-slate-400 italic">Click to add content...</p>
+          )}
         </div>
+      );
+    };
+
+    const renderHeader = () => (
+      <div className="mb-4 pb-4 border-b-2" style={{ borderColor: primaryColor }}>
+        <div className="flex items-center gap-3 mb-2">
+          {content.personalDetails.photo && (
+            <img 
+              src={content.personalDetails.photo} 
+              alt="Profile" 
+              className="w-16 h-16 rounded-full object-cover"
+            />
+          )}
+          <div>
+            <h1 
+              className="font-bold"
+              style={{ 
+                fontSize: `${nameSize}px`,
+                fontFamily: headingFont,
+                color: applyTo.name ? primaryColor : '#000'
+              }}
+            >
+              {content.personalDetails.fullName || 'Your Name'}
+            </h1>
+            <p 
+              className="text-sm"
+              style={{ 
+                fontSize: `${jobTitleSize}px`,
+                color: applyTo.jobTitle ? accentColor : '#666'
+              }}
+            >
+              {content.personalDetails.jobTitle || 'Job Title'}
+            </p>
+          </div>
+        </div>
+        <div className="text-xs text-slate-600 flex flex-wrap gap-3">
+          {content.personalDetails.email && (
+            <span className="flex items-center gap-1">
+              {showIcons && iconStyle === 'icon' && <Mail className="w-3 h-3" />}
+              {showIcons && iconStyle === 'emoji' && '📧 '}
+              {content.personalDetails.email}
+            </span>
+          )}
+          {content.personalDetails.phone && (
+            <span className="flex items-center gap-1">
+              {showIcons && iconStyle === 'icon' && <Phone className="w-3 h-3" />}
+              {showIcons && iconStyle === 'emoji' && '📱 '}
+              {content.personalDetails.phone}
+            </span>
+          )}
+          {content.personalDetails.location && (
+            <span className="flex items-center gap-1">
+              {showIcons && iconStyle === 'icon' && <MapPin className="w-3 h-3" />}
+              {showIcons && iconStyle === 'emoji' && '📍 '}
+              {content.personalDetails.location}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+
+    const isTwoColumn = template.layout?.type === 'two-column';
+    const columnWidth = template.layout?.columnWidth || 35;
+    const headerPosition = template.layout?.headerPosition || 'top';
+    const leftColumnSections = template.layout?.leftColumnSections || [];
+    const rightColumnSections = template.layout?.rightColumnSections || [];
+
+    const renderSingleColumn = () => (
+      <div style={{ margin: `${pageMargin}mm` }}>
+        {allOrderedSections.map(section => renderSection(section))}
+      </div>
+    );
+
+    const renderTwoColumn = () => {
+      const leftSections = allOrderedSections.filter(s => leftColumnSections.includes(s.id));
+      const rightSections = allOrderedSections.filter(s => rightColumnSections.includes(s.id));
+      const unassignedSections = allOrderedSections.filter(s => 
+        !leftColumnSections.includes(s.id) && !rightColumnSections.includes(s.id)
+      );
+
+      if (headerPosition === 'left') {
+        return (
+          <div className="flex gap-6" style={{ margin: `${pageMargin}mm` }}>
+            <div className="w-1/3" style={{ borderRight: `2px solid ${primaryColor}`, paddingRight: '16px' }}>
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-2">
+                  {content.personalDetails.photo && (
+                    <img 
+                      src={content.personalDetails.photo} 
+                      alt="Profile" 
+                      className="w-20 h-20 rounded-full object-cover"
+                    />
+                  )}
+                  <div>
+                    <h1 
+                      className="font-bold"
+                      style={{ 
+                        fontSize: `${nameSize}px`,
+                        fontFamily: headingFont,
+                        color: applyTo.name ? primaryColor : '#000'
+                      }}
+                    >
+                      {content.personalDetails.fullName || 'Your Name'}
+                    </h1>
+                    <p 
+                      className="text-sm"
+                      style={{ 
+                        fontSize: `${jobTitleSize}px`,
+                        color: applyTo.jobTitle ? accentColor : '#666'
+                      }}
+                    >
+                      {content.personalDetails.jobTitle || 'Job Title'}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-xs text-slate-600 space-y-1 mt-3">
+                  {content.personalDetails.email && (
+                    <div className="flex items-center gap-1">
+                      {showIcons && iconStyle === 'icon' && <Mail className="w-3 h-3" />}
+                      {showIcons && iconStyle === 'emoji' && '📧 '}
+                      {content.personalDetails.email}
+                    </div>
+                  )}
+                  {content.personalDetails.phone && (
+                    <div className="flex items-center gap-1">
+                      {showIcons && iconStyle === 'icon' && <Phone className="w-3 h-3" />}
+                      {showIcons && iconStyle === 'emoji' && '📱 '}
+                      {content.personalDetails.phone}
+                    </div>
+                  )}
+                  {content.personalDetails.location && (
+                    <div className="flex items-center gap-1">
+                      {showIcons && iconStyle === 'icon' && <MapPin className="w-3 h-3" />}
+                      {showIcons && iconStyle === 'emoji' && '📍 '}
+                      {content.personalDetails.location}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {leftSections.map(section => renderSection(section))}
+            </div>
+            <div className="flex-1 pl-2">
+              {rightSections.map(section => renderSection(section))}
+              {unassignedSections.map(section => renderSection(section))}
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div style={{ margin: `${pageMargin}mm` }}>
+          <div className="flex gap-6">
+            <div style={{ width: `${columnWidth}%` }}>
+              {leftSections.map(section => renderSection(section))}
+            </div>
+            <div className="flex-1">
+              {rightSections.map(section => renderSection(section))}
+              {unassignedSections.map(section => renderSection(section))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div id="resume-preview" className="bg-white p-6" style={styles}>
+        {headerPosition === 'top' && renderHeader()}
+        {isTwoColumn ? renderTwoColumn() : renderSingleColumn()}
       </div>
     );
   };
@@ -1496,6 +1825,9 @@ export default function ResumeEditor() {
                   onPersonalDetailsChange={handlePersonalDetailChange}
                   onSectionUpdate={handleSectionChange}
                   onSectionVisibilityToggle={toggleSectionVisibility}
+                  onAddCustomSection={() => setShowCustomSectionModal(true)}
+                  onEditEntry={handleEditEntry}
+                  onDeleteEntry={handleDeleteEntry}
                 />
               )}
               {activeTab === 'customize' && renderCustomizePanel()}
@@ -1512,42 +1844,67 @@ export default function ResumeEditor() {
 
       {showCustomSectionModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">Add Custom Section</h3>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-600 mb-2">Section Title</label>
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Add New Section</h3>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-slate-600 mb-3">Choose Section Type</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { type: 'experience', label: 'Work Experience', emoji: '💼' },
+                  { type: 'education', label: 'Education', emoji: '🎓' },
+                  { type: 'projects', label: 'Projects', emoji: '📁' },
+                  { type: 'certificates', label: 'Certificates', emoji: '📜' },
+                  { type: 'skills', label: 'Skills', emoji: '⚡' },
+                  { type: 'languages', label: 'Languages', emoji: '🌐' },
+                  { type: 'strengths', label: 'Strengths', emoji: '💪' },
+                  { type: 'interests', label: 'Interests', emoji: '❤️' },
+                ].map(({ type, label, emoji }) => (
+                  <button
+                    key={type}
+                    onClick={() => {
+                      const newSection = addSection(type, label);
+                      setActiveSection(newSection.id);
+                      setExpandedSections(prev => ({ ...prev, [newSection.id]: true }));
+                      setShowCustomSectionModal(false);
+                    }}
+                    className="flex items-center gap-2 px-4 py-3 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition-colors text-left"
+                  >
+                    <span className="text-xl">{emoji}</span>
+                    <span className="text-sm font-medium text-slate-700">{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="border-t border-slate-200 pt-4 mb-4">
+              <label className="block text-sm font-medium text-slate-600 mb-3">Or Create Custom Section</label>
               <input
                 type="text"
                 value={customSectionTitle}
                 onChange={(e) => setCustomSectionTitle(e.target.value)}
-                placeholder="e.g., Awards, Languages, Volunteer..."
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleAddCustomSection();
-                  }
-                }}
+                placeholder="e.g., Awards, Volunteer, Publications..."
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-3"
               />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowCustomSectionModal(false);
-                  setCustomSectionTitle('');
-                }}
-                className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors"
-              >
-                Cancel
-              </button>
+              <p className="text-xs text-slate-500 mb-3">Custom sections include: Title, Subtitle, Date Range, and Description</p>
               <button
                 onClick={handleAddCustomSection}
                 disabled={!customSectionTitle.trim()}
-                className="flex-1 px-4 py-2 bg-blue-500 text-white font-medium rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-2 bg-purple-500 text-white font-medium rounded-xl hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Add Section
+                Add Custom Section
               </button>
             </div>
+            
+            <button
+              onClick={() => {
+                setShowCustomSectionModal(false);
+                setCustomSectionTitle('');
+              }}
+              className="w-full px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}

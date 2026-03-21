@@ -67,16 +67,12 @@ export const getEmptySectionContent = (type) => {
       };
     case SECTION_TYPES.LANGUAGES:
       return {
-        items: [
-          { id: 'lang-1', name: '', level: 3 },
-        ],
+        items: [],
         displayStyle: 'list',
       };
     case SECTION_TYPES.STRENGTHS:
       return {
-        items: [
-          { id: 'str-1', name: '', level: 3 },
-        ],
+        items: [],
         displayStyle: 'level',
       };
     case SECTION_TYPES.INTERESTS:
@@ -114,7 +110,16 @@ export const getEmptySectionContent = (type) => {
     case SECTION_TYPES.CUSTOM:
       return {
         title: 'Custom Section',
-        items: [{ id: 'custom-1', title: '', subtitle: '', description: '', date: '' }],
+        items: [
+          {
+            id: 'custom-1',
+            title: '',
+            subtitle: '',
+            startDate: '',
+            endDate: '',
+            description: '',
+          }
+        ],
         displayStyle: 'list',
       };
     default:

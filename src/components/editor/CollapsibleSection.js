@@ -15,6 +15,9 @@ export default function CollapsibleSection({
   onVisibilityToggle,
   itemCount = 0,
   previewItems = [],
+  entryItems = [],
+  onEditEntry,
+  onDeleteEntry,
   children,
   addButtonLabel = 'Add Entry',
   onAdd,
@@ -83,7 +86,43 @@ export default function CollapsibleSection({
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 border-t border-slate-100">
-              {previewItems.length > 0 && (
+              {entryItems.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {entryItems.map((item, index) => (
+                    <div 
+                      key={item.id || index} 
+                      className="group flex items-center justify-between p-3 bg-slate-50 rounded-lg text-sm hover:bg-slate-100 transition-colors cursor-pointer"
+                      onClick={() => onEditEntry?.(item.id)}
+                    >
+                      <span className="text-slate-700 flex-1">{item.title || item.preview}</span>
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditEntry?.(item.id);
+                          }}
+                          className="p-1.5 rounded text-blue-600 hover:bg-blue-100"
+                          title="Edit"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteEntry?.(item.id);
+                          }}
+                          className="p-1.5 rounded text-red-500 hover:bg-red-100"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {previewItems.length > 0 && entryItems.length === 0 && (
                 <div className="mt-3 space-y-2">
                   {previewItems.map((item, index) => (
                     <div 

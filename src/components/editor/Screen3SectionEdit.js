@@ -24,8 +24,9 @@ export default function Screen3SectionEdit({
 
   const config = getSectionConfig(sectionId);
   const fields = config?.fields || [];
+  const isCustomSection = !config;
   const sectionTitle = SECTION_CONFIG[sectionId]?.title || config?.title || sectionId;
-  const emoji = SECTION_CONFIG[sectionId]?.emoji || config?.emoji;
+  const emoji = SECTION_CONFIG[sectionId]?.emoji || config?.emoji || '📋';
 
   useEffect(() => {
     if (entry) {
@@ -333,8 +334,53 @@ export default function Screen3SectionEdit({
         </div>
         
         <div className="bg-white rounded-xl border border-slate-200 p-4">
+          {/* For custom sections, show default fields */}
+          {isCustomSection && (
+            <>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+                <input
+                  type="text"
+                  value={formData.title || ''}
+                  onChange={(e) => handleChange('title', e.target.value)}
+                  placeholder="e.g., Employee of the Month"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Subtitle</label>
+                <input
+                  type="text"
+                  value={formData.subtitle || ''}
+                  onChange={(e) => handleChange('subtitle', e.target.value)}
+                  placeholder="e.g., Company Name, Year"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Date Range</label>
+                <DateRangePicker
+                  startDate={formData.startDate || ''}
+                  endDate={formData.endDate || ''}
+                  onStartDateChange={(value) => handleChange('startDate', value)}
+                  onEndDateChange={(value) => handleChange('endDate', value)}
+                  startPlaceholder="Start Date"
+                  endPlaceholder="End / Present"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <RichTextEditor
+                  value={formData.description || ''}
+                  onChange={(value) => handleChange('description', value)}
+                  placeholder="Describe this entry..."
+                />
+              </div>
+            </>
+          )}
+          
           {/* For single sections (like Profile), show simple form */}
-          {fields.length === 0 && (
+          {!isCustomSection && fields.length === 0 && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Description

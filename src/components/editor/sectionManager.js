@@ -133,8 +133,8 @@ export const sectionManager = {
       collapsible: true,
       icon: Briefcase,
       fields: [
-        { name: 'title', type: 'text', required: true, label: 'Job Title', placeholder: 'Senior Developer', hasLink: true },
-        { name: 'subtitle', type: 'text', required: false, label: 'Company/Organization', placeholder: 'Tech Corp Inc.' },
+        { name: 'jobTitle', type: 'text', required: true, label: 'Job Title', placeholder: 'Senior Developer' },
+        { name: 'employer', type: 'text', required: false, label: 'Company', placeholder: 'Tech Corp Inc.' },
         { name: 'startDate', type: 'date', required: false, label: 'Start Date' },
         { name: 'endDate', type: 'date', required: false, label: 'End Date', endDate: true },
         { name: 'location', type: 'text', required: false, label: 'Location', placeholder: 'San Francisco, CA' },
@@ -193,21 +193,6 @@ export const sectionManager = {
       ]
     },
     {
-      id: 'experience',
-      title: 'Work Experience',
-      type: 'list',
-      collapsible: true,
-      icon: Briefcase,
-      fields: [
-        { name: 'jobTitle', type: 'text', required: true, label: 'Job Title', placeholder: 'Senior Developer' },
-        { name: 'employer', type: 'text', required: false, label: 'Company', placeholder: 'Tech Corp Inc.' },
-        { name: 'startDate', type: 'date', required: false, label: 'Start Date' },
-        { name: 'endDate', type: 'date', required: false, label: 'End Date', endDate: true },
-        { name: 'location', type: 'text', required: false, label: 'Location', placeholder: 'San Francisco, CA' },
-        { name: 'description', type: 'richtext', required: false, label: 'Description', placeholder: 'Describe your responsibilities and achievements...' }
-      ]
-    },
-    {
       id: 'projects',
       title: 'Projects',
       type: 'list',
@@ -261,10 +246,18 @@ export const getAllSectionIds = () => {
 
 export const createEmptyEntry = (sectionId) => {
   const config = getSectionConfig(sectionId);
-  if (!config) return {};
-
+  
   const entry = { id: `${sectionId}-${Date.now()}` };
   
+  if (!config) {
+    entry.title = '';
+    entry.subtitle = '';
+    entry.startDate = '';
+    entry.endDate = '';
+    entry.description = '';
+    return entry;
+  }
+
   config.fields.forEach(field => {
     switch (field.type) {
       case 'text':
@@ -293,7 +286,13 @@ export const createEmptyEntry = (sectionId) => {
 
 export const getEntryPreview = (sectionId, entry) => {
   const config = getSectionConfig(sectionId);
-  if (!config) return [];
+  
+  if (!config) {
+    const preview = [];
+    if (entry.title || entry.name) preview.push(entry.title || entry.name);
+    if (entry.subtitle) preview.push(entry.subtitle);
+    return preview;
+  }
 
   const preview = [];
   
@@ -313,7 +312,10 @@ export const getEntryPreview = (sectionId, entry) => {
 
 export const formatEntryTitle = (sectionId, entry) => {
   const config = getSectionConfig(sectionId);
-  if (!config) return 'Untitled';
+  
+  if (!config) {
+    return entry.title || entry.name || 'Untitled';
+  }
 
   for (const field of config.fields) {
     if (field.hasLink && entry[field.name]) {
@@ -328,12 +330,21 @@ export const formatEntryTitle = (sectionId, entry) => {
     return 'New Entry';
   }
 
-  return 'Untitled';
+  return entry.title || entry.name || 'Untitled';
 };
 
 export const isEntryEmpty = (sectionId, entry) => {
   const config = getSectionConfig(sectionId);
-  if (!config) return true;
+  
+  if (!config) {
+    const customFields = ['title', 'subtitle', 'description', 'name'];
+    for (const field of customFields) {
+      if (entry[field] && typeof entry[field] === 'string' && entry[field].trim() !== '') {
+        return false;
+      }
+    }
+    return true;
+  }
 
   for (const field of config.fields) {
     const value = entry[field.name];

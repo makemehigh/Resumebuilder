@@ -10,14 +10,17 @@ export default function CustomDatePicker({
   placeholder = 'Select date',
   showMonthYearPicker = false,
   showYearPicker = false,
-  dateFormat = 'MMM yyyy',
+  dateFormat = 'dd MMM yyyy',
   className = '' 
 }) {
   const parsedDate = value ? new Date(value) : null;
 
   const handleChange = (date) => {
     if (date) {
-      const formatted = date.toISOString();
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const formatted = `${year}-${month}-${day}T00:00:00.000Z`;
       onChange(formatted);
     } else {
       onChange('');

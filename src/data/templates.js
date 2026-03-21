@@ -31,6 +31,7 @@ export const SECTION_CONFIG = {
   'tech-stack': { title: 'Tech Stack', icon: '💻', emoji: '💻' },
   software: { title: 'Software', icon: '⚙️', emoji: '⚙️' },
   portfolio: { title: 'Portfolio', icon: '🎨', emoji: '🎨' },
+  custom: { title: 'Custom Section', icon: '📋', emoji: '📋' },
 };
 
 export const DEFAULT_SECTIONS = [
@@ -58,7 +59,7 @@ export const TEMPLATES = [
       headerPosition: 'top',
       columnWidth: 35,
       leftColumnSections: ['skills', 'languages', 'strengths'],
-      rightColumnSections: ['profile', 'experience', 'education', 'projects', 'certificates', 'interests'],
+      rightColumnSections: ['experience', 'education', 'projects', 'certificates', 'interests'],
     },
     styles: {
       fontHeading: 'Inter',
@@ -69,7 +70,7 @@ export const TEMPLATES = [
       showIcons: true,
       iconStyle: 'emoji',
     },
-    sectionOrder: ['profile', 'experience', 'education', 'skills', 'languages', 'strengths', 'projects', 'certificates', 'interests'],
+    sectionOrder: ['experience', 'education', 'skills', 'languages', 'strengths', 'projects', 'certificates', 'interests'],
   },
   {
     id: 'classic',
@@ -91,7 +92,7 @@ export const TEMPLATES = [
       fontSize: { name: 22, heading: 13, body: 11, subtitle: 10 },
       showIcons: false,
     },
-    sectionOrder: ['profile', 'experience', 'education', 'skills', 'languages', 'projects', 'certificates'],
+    sectionOrder: ['experience', 'education', 'skills', 'languages', 'projects', 'certificates', 'interests'],
   },
   {
     id: 'corporate',
@@ -105,7 +106,7 @@ export const TEMPLATES = [
       headerPosition: 'left',
       columnWidth: 30,
       leftColumnSections: ['skills', 'languages', 'certificates'],
-      rightColumnSections: ['profile', 'experience', 'education', 'projects', 'interests'],
+      rightColumnSections: ['experience', 'education', 'projects', 'interests'],
     },
     styles: {
       fontHeading: 'Helvetica',
@@ -116,7 +117,7 @@ export const TEMPLATES = [
       showIcons: true,
       iconStyle: 'emoji',
     },
-    sectionOrder: ['experience', 'education', 'skills', 'languages', 'profile', 'projects', 'certificates'],
+    sectionOrder: ['experience', 'education', 'skills', 'languages', 'projects', 'certificates', 'interests'],
   },
   {
     id: 'creative',
@@ -130,7 +131,7 @@ export const TEMPLATES = [
       headerPosition: 'top',
       columnWidth: 40,
       leftColumnSections: ['skills', 'languages', 'interests'],
-      rightColumnSections: ['profile', 'experience', 'education', 'projects', 'certificates'],
+      rightColumnSections: ['experience', 'education', 'projects', 'certificates'],
     },
     styles: {
       fontHeading: 'Poppins',
@@ -141,7 +142,7 @@ export const TEMPLATES = [
       showIcons: true,
       iconStyle: 'emoji',
     },
-    sectionOrder: ['profile', 'skills', 'experience', 'education', 'languages', 'projects', 'certificates', 'interests'],
+    sectionOrder: ['skills', 'experience', 'education', 'languages', 'projects', 'certificates', 'interests'],
   },
   {
     id: 'minimal',
@@ -163,7 +164,7 @@ export const TEMPLATES = [
       fontSize: { name: 22, heading: 13, body: 11, subtitle: 10 },
       showIcons: false,
     },
-    sectionOrder: ['profile', 'experience', 'education', 'skills', 'languages', 'strengths', 'projects', 'certificates', 'interests'],
+    sectionOrder: ['experience', 'education', 'skills', 'languages', 'strengths', 'projects', 'certificates', 'interests'],
   },
   {
     id: 'modern',
@@ -177,7 +178,7 @@ export const TEMPLATES = [
       headerPosition: 'top',
       columnWidth: 38,
       leftColumnSections: ['skills', 'languages', 'certificates'],
-      rightColumnSections: ['profile', 'experience', 'education', 'projects', 'interests'],
+      rightColumnSections: ['experience', 'education', 'projects', 'interests'],
     },
     styles: {
       fontHeading: 'Montserrat',
@@ -188,7 +189,7 @@ export const TEMPLATES = [
       showIcons: true,
       iconStyle: 'emoji',
     },
-    sectionOrder: ['profile', 'skills', 'experience', 'education', 'languages', 'projects', 'certificates', 'interests'],
+    sectionOrder: ['skills', 'experience', 'education', 'languages', 'projects', 'certificates', 'interests'],
   },
 ];
 

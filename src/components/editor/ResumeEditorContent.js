@@ -18,7 +18,10 @@ export default function ResumeEditorContent({
   sections,
   onPersonalDetailsChange,
   onSectionUpdate,
-  onSectionVisibilityToggle
+  onSectionVisibilityToggle,
+  onAddCustomSection,
+  onEditEntry,
+  onDeleteEntry
 }) {
   const [currentScreen, setCurrentScreen] = useState(SCREENS.MAIN);
   const [expandedSections, setExpandedSections] = useState({});
@@ -121,6 +124,16 @@ export default function ResumeEditorContent({
     setIsSingleSection(false);
   };
 
+  const handleDeleteEntry = (sectionId, entryId) => {
+    const section = sections.find(s => s.id === sectionId);
+    if (!section) return;
+    
+    const currentItems = section?.content?.items || [];
+    const newItems = currentItems.filter(item => item.id !== entryId);
+
+    onSectionUpdate(sectionId, { ...(section.content || {}), items: newItems });
+  };
+
   const handleEntryDelete = () => {
     if (isSingleSection) {
       onSectionUpdate(editingSection, { text: '' });
@@ -193,7 +206,10 @@ export default function ResumeEditorContent({
               onSectionToggle={handleToggleSection}
               onSectionVisibilityToggle={onSectionVisibilityToggle}
               onAddEntry={handleAddEntry}
+              onEditEntry={(sectionId, entryId) => handleSectionEdit(sectionId, entryId)}
+              onDeleteEntry={handleDeleteEntry}
               expandedSections={expandedSections}
+              onAddCustomSection={onAddCustomSection}
             />
           </motion.div>
         )}

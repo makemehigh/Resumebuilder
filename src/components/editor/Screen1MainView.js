@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Mail, Phone, MapPin } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Plus } from 'lucide-react';
 import CollapsibleSection from './CollapsibleSection';
 import { sectionManager, SECTION_ICONS, formatEntryTitle, getEntryPreview, isEntryEmpty } from './sectionManager';
 import { SECTION_CONFIG } from '../../../src/data/templates';
@@ -13,7 +13,10 @@ export default function Screen1MainView({
   onSectionToggle,
   onSectionVisibilityToggle,
   onAddEntry,
-  expandedSections
+  onEditEntry,
+  onDeleteEntry,
+  expandedSections,
+  onAddCustomSection
 }) {
   const getSectionItems = (sectionId) => {
     const section = sections.find(s => s.id === sectionId);
@@ -27,6 +30,15 @@ export default function Screen1MainView({
       const preview = getEntryPreview(sectionId, item);
       return preview.join(' • ') || formatEntryTitle(sectionId, item);
     });
+  };
+
+  const getEntryItemsForSection = (sectionId) => {
+    const items = getSectionItems(sectionId);
+    return items.map(item => ({
+      id: item.id,
+      title: formatEntryTitle(sectionId, item),
+      preview: getEntryPreview(sectionId, item).join(' • ') || formatEntryTitle(sectionId, item)
+    }));
   };
 
   const getSectionVisibility = (sectionId) => {
@@ -96,14 +108,20 @@ export default function Screen1MainView({
       {/* Collapsible Sections - use sections from resume content */}
       {sections
         .filter(section => {
-          const config = sectionManager.sections.find(s => s.id === section.id);
-          return config && config.type !== 'fixed';
+          if (section.type === 'custom') return true;
+          if (section.type === 'fixed') return false;
+          if (section.type === 'profile') return false;
+          
+          return true;
         })
         .map(section => {
-          const config = sectionManager.sections.find(s => s.id === section.id);
+          const config = sectionManager.sections.find(s => 
+            s.id === section.id || s.id === section.type
+          );
+          const isCustom = section.type === 'custom';
           const items = getSectionItems(section.id);
-          const Icon = SECTION_ICONS[section.id];
-          const emoji = SECTION_CONFIG[section.id]?.emoji || config?.emoji;
+          const Icon = isCustom ? null : (SECTION_ICONS[section.id] || SECTION_ICONS[section.type]);
+          const emoji = isCustom ? '📋' : (SECTION_CONFIG[section.id]?.emoji || SECTION_CONFIG[section.type]?.emoji || config?.emoji);
           
           return (
             <CollapsibleSection
@@ -118,12 +136,24 @@ export default function Screen1MainView({
               onVisibilityToggle={() => handleSectionVisibilityToggle(section.id)}
               itemCount={items.length}
               previewItems={getSectionPreview(section.id)}
-              addButtonLabel={`Add ${(section.title || config?.title || section.id).replace(/s$/, '')}`}
+              entryItems={getEntryItemsForSection(section.id)}
+              onEditEntry={(entryId) => onEditEntry?.(section.id, entryId)}
+              onDeleteEntry={(entryId) => onDeleteEntry?.(section.id, entryId)}
+              addButtonLabel={isCustom ? 'Add Entry' : `Add ${(section.title || config?.title || section.id).replace(/s$/, '')}`}
               onAdd={() => onAddEntry(section.id)}
-              canAdd={config?.type === 'list'}
+              canAdd={!isCustom && config?.type === 'list'}
             />
           );
         })}
+      
+      {/* Add Custom Section Button */}
+      <button
+        onClick={onAddCustomSection}
+        className="w-full py-3 px-4 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+      >
+        <Plus className="w-5 h-5" />
+        <span className="font-medium">Add Custom Section</span>
+      </button>
     </div>
   );
 }

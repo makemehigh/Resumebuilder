@@ -21,7 +21,8 @@ export default function ResumeEditorContent({
   onSectionVisibilityToggle,
   onAddCustomSection,
   onEditEntry,
-  onDeleteEntry
+  onDeleteEntry,
+  onReorderEntries
 }) {
   const [currentScreen, setCurrentScreen] = useState(SCREENS.MAIN);
   const [expandedSections, setExpandedSections] = useState({});
@@ -134,6 +135,16 @@ export default function ResumeEditorContent({
     onSectionUpdate(sectionId, { ...(section.content || {}), items: newItems });
   };
 
+  const handleReorderEntries = (sectionId, newOrder) => {
+    const section = sections.find(s => s.id === sectionId);
+    if (!section) return;
+    
+    const currentItems = section?.content?.items || [];
+    const reorderedItems = newOrder.map(id => currentItems.find(item => item.id === id)).filter(Boolean);
+
+    onSectionUpdate(sectionId, { ...(section.content || {}), items: reorderedItems });
+  };
+
   const handleEntryDelete = () => {
     if (isSingleSection) {
       onSectionUpdate(editingSection, { text: '' });
@@ -208,6 +219,7 @@ export default function ResumeEditorContent({
               onAddEntry={handleAddEntry}
               onEditEntry={(sectionId, entryId) => handleSectionEdit(sectionId, entryId)}
               onDeleteEntry={handleDeleteEntry}
+              onReorderEntries={handleReorderEntries}
               expandedSections={expandedSections}
               onAddCustomSection={onAddCustomSection}
             />

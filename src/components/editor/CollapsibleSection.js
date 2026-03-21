@@ -3,6 +3,65 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Eye, EyeOff, Pencil, GripVertical, Trash2, Plus } from 'lucide-react';
 import { useState } from 'react';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+function SortableItem({ item, onEdit, onDelete }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="group flex items-center justify-between p-3 bg-slate-50 rounded-lg text-sm hover:bg-slate-100 transition-colors"
+    >
+      <div 
+        {...attributes}
+        {...listeners}
+        className="flex items-center gap-2 cursor-grab active:cursor-grabbing"
+      >
+        <GripVertical className="w-4 h-4 text-slate-400" />
+        <span 
+          className="text-slate-700 flex-1 cursor-pointer"
+          onClick={() => onEdit?.(item.id)}
+        >
+          {item.title || item.preview}
+        </span>
+      </div>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={() => onEdit?.(item.id)}
+          className="p-1.5 rounded text-blue-600 hover:bg-blue-100"
+          title="Edit"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={() => onDelete?.(item.id)}
+          className="p-1.5 rounded text-red-500 hover:bg-red-100"
+          title="Delete"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function CollapsibleSection({
   title,
@@ -18,12 +77,31 @@ export default function CollapsibleSection({
   entryItems = [],
   onEditEntry,
   onDeleteEntry,
+  onReorderEntries,
   children,
   addButtonLabel = 'Add Entry',
   onAdd,
   canAdd = true,
   className = ''
 }) {
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id && onReorderEntries) {
+      const oldIndex = entryItems.findIndex(item => item.id === active.id);
+      const newIndex = entryItems.findIndex(item => item.id === over.id);
+      const newOrder = arrayMove(entryItems, oldIndex, newIndex).map(item => item.id);
+      onReorderEntries(newOrder);
+    }
+  };
+
   return (
     <div className={`border border-slate-200 rounded-xl overflow-hidden bg-white ${className}`}>
       <div 
@@ -87,39 +165,27 @@ export default function CollapsibleSection({
           >
             <div className="px-4 pb-4 border-t border-slate-100">
               {entryItems.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {entryItems.map((item, index) => (
-                    <div 
-                      key={item.id || index} 
-                      className="group flex items-center justify-between p-3 bg-slate-50 rounded-lg text-sm hover:bg-slate-100 transition-colors cursor-pointer"
-                      onClick={() => onEditEntry?.(item.id)}
-                    >
-                      <span className="text-slate-700 flex-1">{item.title || item.preview}</span>
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEditEntry?.(item.id);
-                          }}
-                          className="p-1.5 rounded text-blue-600 hover:bg-blue-100"
-                          title="Edit"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteEntry?.(item.id);
-                          }}
-                          className="p-1.5 rounded text-red-500 hover:bg-red-100"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={entryItems.map(item => item.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="mt-3 space-y-2">
+                      {entryItems.map((item) => (
+                        <SortableItem
+                          key={item.id}
+                          item={item}
+                          onEdit={onEditEntry}
+                          onDelete={onDeleteEntry}
+                        />
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </SortableContext>
+                </DndContext>
               )}
               
               {previewItems.length > 0 && entryItems.length === 0 && (

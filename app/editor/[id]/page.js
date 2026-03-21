@@ -144,6 +144,15 @@ export default function ResumeEditor() {
     handleSectionChange(sectionId, { ...section.content, items: newItems });
   };
 
+  const handleReorderEntries = (sectionId, newOrder) => {
+    const section = currentResume.content.sections.find(s => s.id === sectionId);
+    if (!section) return;
+    
+    const currentItems = section?.content?.items || [];
+    const reorderedItems = newOrder.map(id => currentItems.find(item => item.id === id)).filter(Boolean);
+    handleSectionChange(sectionId, { ...section.content, items: reorderedItems });
+  };
+
   const updateSectionItem = (sectionId, itemId, field, value) => {
     const section = currentResume.content.sections.find(s => s.id === sectionId);
     const items = section?.content?.items || [];
@@ -1828,6 +1837,7 @@ export default function ResumeEditor() {
                   onAddCustomSection={() => setShowCustomSectionModal(true)}
                   onEditEntry={handleEditEntry}
                   onDeleteEntry={handleDeleteEntry}
+                  onReorderEntries={handleReorderEntries}
                 />
               )}
               {activeTab === 'customize' && renderCustomizePanel()}

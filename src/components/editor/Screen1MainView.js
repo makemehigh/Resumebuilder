@@ -15,6 +15,7 @@ export default function Screen1MainView({
   onAddEntry,
   onEditEntry,
   onDeleteEntry,
+  onReorderEntries,
   expandedSections,
   onAddCustomSection
 }) {
@@ -139,6 +140,7 @@ export default function Screen1MainView({
               entryItems={getEntryItemsForSection(section.id)}
               onEditEntry={(entryId) => onEditEntry?.(section.id, entryId)}
               onDeleteEntry={(entryId) => onDeleteEntry?.(section.id, entryId)}
+              onReorderEntries={(newOrder) => onReorderEntries?.(section.id, newOrder)}
               addButtonLabel={isCustom ? 'Add Entry' : `Add ${(section.title || config?.title || section.id).replace(/s$/, '')}`}
               onAdd={() => onAddEntry(section.id)}
               canAdd={!isCustom && config?.type === 'list'}

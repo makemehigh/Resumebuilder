@@ -83,6 +83,7 @@ export default function CollapsibleSection({
   onTitleChange,
   isVisible = true,
   onVisibilityToggle,
+  onDeleteSection,
   itemCount = 0,
   previewItems = [],
   entryItems = [],
@@ -212,6 +213,21 @@ export default function CollapsibleSection({
               title="Edit section name"
             >
               <FontAwesomeIcon icon={faPen} className="w-4 h-4" />
+            </button>
+          )}
+          
+          {onDeleteSection && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (window.confirm(`Are you sure you want to delete the "${title}" section?`)) {
+                  onDeleteSection();
+                }
+              }}
+              className="p-1.5 rounded-full text-red-500 hover:bg-red-50 transition-colors"
+              title="Delete section"
+            >
+              <FontAwesomeIcon icon={faTrashAlt} className="w-4 h-4" />
             </button>
           )}
           

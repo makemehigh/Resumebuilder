@@ -76,6 +76,15 @@ export default function ResumeEditor() {
     updateSectionContent(sectionId, content);
   };
 
+  const handleDeleteSection = (sectionId) => {
+    removeSection(sectionId);
+    setExpandedSections(prev => {
+      const newState = { ...prev };
+      delete newState[sectionId];
+      return newState;
+    });
+  };
+
   const handleAddSection = (type) => {
     const newSection = addSection(type, type.charAt(0).toUpperCase() + type.slice(1));
     setActiveSection(newSection.id);
@@ -1312,7 +1321,7 @@ export default function ResumeEditor() {
                   )}
                 </div>
                 {item.description && (
-                  <p className="text-xs text-slate-500 mt-1">{item.description}</p>
+                  <p className="text-xs text-slate-500 mt-1 prose prose-xs max-w-none" dangerouslySetInnerHTML={{ __html: item.description }} />
                 )}
               </div>
             ))}
@@ -1341,7 +1350,7 @@ export default function ResumeEditor() {
                   </div>
                 </div>
                 {item.description && (
-                  <p className="text-xs text-slate-500 mt-1">{item.description}</p>
+                  <p className="text-xs text-slate-500 mt-1 prose prose-xs max-w-none" dangerouslySetInnerHTML={{ __html: item.description }} />
                 )}
               </div>
             ))}
@@ -1361,7 +1370,7 @@ export default function ResumeEditor() {
                   {item.name}
                 </span>
                 {item.description && (
-                  <p className="text-xs text-slate-500 mt-1 ml-1">{item.description}</p>
+                  <p className="text-xs text-slate-500 mt-1 ml-1 prose prose-xs max-w-none" dangerouslySetInnerHTML={{ __html: item.description }} />
                 )}
               </div>
             ))}
@@ -1378,13 +1387,13 @@ export default function ResumeEditor() {
             {items.map(item => (
               <div key={item.id}>
                 <div className="flex justify-between">
-                  <span className="font-medium" style={{ fontSize: `${subtitleSize}px` }}>{item.jobTitle || item.title}</span>
+                  <span className="font-medium" style={{ fontSize: `${subtitleSize}px` }}>{item.jobTitle || item.title || item.name}</span>
                   <span className="text-slate-500" style={{ fontSize: `${subtitleSize}px` }}>
                     {formatDateRange(item.startDate, item.endDate) || (item.isCurrentRole ? 'Present' : '')}
                   </span>
                 </div>
                 <div className="text-sm text-slate-600" style={{ fontSize: `${bodySize}px` }}>
-                  {item.employer || item.subtitle}{item.location ? `, ${item.location}` : ''}
+                  {item.employer || item.subtitle || item.name}{item.location ? `, ${item.location}` : ''}
                 </div>
                 {item.description && (
                   <div 
@@ -1833,6 +1842,7 @@ export default function ResumeEditor() {
                   onSectionUpdate={handleSectionChange}
                   onSectionTitleChange={updateSectionTitle}
                   onSectionVisibilityToggle={toggleSectionVisibility}
+                  onDeleteSection={handleDeleteSection}
                   onAddCustomSection={() => setShowCustomSectionModal(true)}
                   onEditEntry={handleEditEntry}
                   onDeleteEntry={handleDeleteEntry}
@@ -1860,14 +1870,14 @@ export default function ResumeEditor() {
               <label className="block text-sm font-medium text-slate-600 mb-3">Choose Section Type</label>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { type: 'experience', label: 'Work Experience', emoji: '💼' },
-                  { type: 'education', label: 'Education', emoji: '🎓' },
-                  { type: 'projects', label: 'Projects', emoji: '📁' },
-                  { type: 'certificates', label: 'Certificates', emoji: '📜' },
-                  { type: 'skills', label: 'Skills', emoji: '⚡' },
-                  { type: 'languages', label: 'Languages', emoji: '🌐' },
-                  { type: 'strengths', label: 'Strengths', emoji: '💪' },
-                  { type: 'interests', label: 'Interests', emoji: '❤️' },
+                  { type: SECTION_TYPES.EMPLOYMENT, label: 'Work Experience', emoji: '💼' },
+                  { type: SECTION_TYPES.EDUCATION, label: 'Education', emoji: '🎓' },
+                  { type: SECTION_TYPES.PROJECTS, label: 'Projects', emoji: '📁' },
+                  { type: SECTION_TYPES.CERTIFICATES, label: 'Certificates', emoji: '📜' },
+                  { type: SECTION_TYPES.SKILLS, label: 'Skills', emoji: '⚡' },
+                  { type: SECTION_TYPES.LANGUAGES, label: 'Languages', emoji: '🌐' },
+                  { type: SECTION_TYPES.STRENGTHS, label: 'Strengths', emoji: '💪' },
+                  { type: SECTION_TYPES.INTERESTS, label: 'Interests', emoji: '❤️' },
                 ].map(({ type, label, emoji }) => (
                   <button
                     key={type}

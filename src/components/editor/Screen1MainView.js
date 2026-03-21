@@ -2,7 +2,7 @@
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import CollapsibleSection from './CollapsibleSection';
-import { sectionManager, SECTION_ICONS, formatEntryTitle, getEntryPreview, isEntryEmpty } from './sectionManager';
+import { sectionManager, SECTION_ICONS, formatEntryTitle, getEntryPreview, isEntryEmpty, getSectionConfig } from './sectionManager';
 import { SECTION_CONFIG } from '../../../src/data/templates';
 import { faUser, faEnvelope, faPhone, faMapMarkerAlt, faPlus } from '@fortawesome/free-solid-svg-icons';
 
@@ -15,6 +15,7 @@ export default function Screen1MainView({
   onSectionUpdate,
   onSectionTitleChange,
   onSectionVisibilityToggle,
+  onDeleteSection,
   onAddEntry,
   onEditEntry,
   onDeleteEntry,
@@ -119,9 +120,7 @@ export default function Screen1MainView({
           return true;
         })
         .map(section => {
-          const config = sectionManager.sections.find(s => 
-            s.id === section.id || s.id === section.type
-          );
+          const config = getSectionConfig(section.id);
           const isCustom = section.type === 'custom';
           const items = getSectionItems(section.id);
           const Icon = isCustom ? null : (SECTION_ICONS[section.id] || SECTION_ICONS[section.type]);
@@ -136,6 +135,7 @@ export default function Screen1MainView({
               onTitleChange={(newTitle) => onSectionTitleChange?.(section.id, newTitle)}
               isVisible={section.isVisible !== false}
               onVisibilityToggle={() => handleSectionVisibilityToggle(section.id)}
+              onDeleteSection={() => onDeleteSection?.(section.id)}
               itemCount={items.length}
               previewItems={getSectionPreview(section.id)}
               entryItems={getEntryItemsForSection(section.id)}
@@ -144,7 +144,7 @@ export default function Screen1MainView({
               onReorderEntries={(newOrder) => onReorderEntries?.(section.id, newOrder)}
               addButtonLabel={isCustom ? 'Add Entry' : `Add ${(section.title || config?.title || section.id).replace(/s$/, '')}`}
               onAdd={() => onAddEntry(section.id)}
-              canAdd={!isCustom && config?.type === 'list'}
+              canAdd={config?.type === 'list' || isCustom}
             />
           );
         })}

@@ -31,7 +31,6 @@ export const SECTION_ICONS = {
   skills: faBolt,
   strengths: faTrophy,
   languages: faLanguage,
-  experience: faBriefcase,
   employment: faBriefcase,
   'work-experience': faBriefcase,
   projects: faFolderOpen,
@@ -64,7 +63,7 @@ export const SECTION_ICONS = {
 export const SECTION_EMOJI = {
   'personal-info': '👤',
   education: '🎓',
-  experience: '💼',
+  employment: '💼',
   'work-experience': '💼',
   skills: '⚡',
   languages: '🌐',
@@ -121,7 +120,7 @@ export const sectionManager = {
       ]
     },
     {
-      id: 'experience',
+      id: 'employment',
       title: 'Work Experience',
       type: 'list',
       collapsible: true,
@@ -231,7 +230,14 @@ export const sectionManager = {
 };
 
 export const getSectionConfig = (sectionId) => {
-  return sectionManager.sections.find(s => s.id === sectionId);
+  let config = sectionManager.sections.find(s => s.id === sectionId);
+  if (config) return config;
+  
+  const baseType = sectionId.split('-')[0];
+  config = sectionManager.sections.find(s => s.id === baseType);
+  if (config) return config;
+  
+  return null;
 };
 
 export const getAllSectionIds = () => {
